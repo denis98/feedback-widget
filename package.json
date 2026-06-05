@@ -48,7 +48,7 @@
   },
   "dependencies": {
     "modern-screenshot": "^4.6.8",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8 || ^4.0.0"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",
@@ -96,7 +96,6 @@
     "url": "git+https://github.com/denis98/feedback-widget.git"
   },
   "publishConfig": {
-    "access": "public",
-    "provenance": true
+    "access": "public"
   }
 }

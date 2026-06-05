@@ -4,7 +4,7 @@ export const zoneInfoSchema = z.object({
   id: z.string(),
   label: z.string(),
   cssPath: z.string().optional(),
-  meta: z.record(z.unknown()).optional(),
+  meta: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const feedbackContextSchema = z.object({
@@ -32,7 +32,7 @@ export const webhookPayloadSchema = z.object({
   user: userInfoSchema.nullable(),
   screenshot: z.string().nullable(),
   screenshots: z.array(z.string()).default([]),
-  custom: z.record(z.unknown()),
+  custom: z.record(z.string(), z.unknown()),
 });
 
 export const webhookResponseSchema = z.object({

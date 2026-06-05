@@ -24,6 +24,10 @@ to [Semantic Versioning](https://semver.org/).
 ### Changed
 - Default build externalizes `zod` and `modern-screenshot`; a self-contained
   build is available via `npm run build:vendored`.
+- **zod 4 support**: widget now works with both zod 3 and 4
+  (`"zod": "^3.23.8 || ^4.0.0"`); `z.record` calls use the two-argument form.
+- `publishConfig.provenance` removed so local `npm publish` works; enable
+  provenance in the CI release workflow instead (`npm publish --provenance`).
 
 ## [0.1.0]
 
