@@ -1,0 +1,84 @@
+{
+  "name": "@denis98/feedback-widget",
+  "version": "0.1.0",
+  "description": "Lightweight, open-source feedback widget for React: bug/feature/general feedback with pixel-perfect region screenshots, in-browser annotation, and webhook-based ticket integration.",
+  "license": "MIT",
+  "author": "Denis Graipel",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "build:vendored": "BUNDLE_DEPS=1 tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0",
+    "react-dom": ">=18.0.0"
+  },
+  "dependencies": {
+    "modern-screenshot": "^4.6.8",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@storybook/addon-essentials": "^8.4.0",
+    "@storybook/react": "^8.4.0",
+    "@storybook/react-vite": "^8.4.0",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.1.0",
+    "@testing-library/user-event": "^14.5.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "jsdom": "^25.0.1",
+    "msw": "^2.6.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "storybook": "^8.4.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "keywords": [
+    "react",
+    "feedback",
+    "widget",
+    "webhook",
+    "bug-report",
+    "feature-request",
+    "screenshot",
+    "annotation",
+    "screen-capture"
+  ],
+  "homepage": "https://github.com/denis98/feedback-widget#readme",
+  "bugs": {
+    "url": "https://github.com/denis98/feedback-widget/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/denis98/feedback-widget.git"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  }
+}
