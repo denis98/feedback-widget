@@ -22,8 +22,7 @@ export function FeedbackZone({ id, label, meta, children }: FeedbackZoneProps) {
   }, [id, label, meta, registerZone, unregisterZone]);
 
   const isSelecting =
-    phase === 'selecting' &&
-    (config.selectionMode === 'zone' || config.selectionMode === 'hybrid');
+    phase === 'selecting' && (config.selectionMode === 'zone' || config.selectionMode === 'hybrid');
 
   const isSelected = selectedZone?.id === id;
 

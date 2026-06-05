@@ -97,8 +97,14 @@ export function RegionSelector() {
       }
       if (!allowPixel) return;
       const target = e.target as HTMLElement;
-      if (isWidget(target)) { highlight(null); return; }
-      if (config.selectionMode === 'hybrid' && getZoneForElement(target)) { highlight(null); return; }
+      if (isWidget(target)) {
+        highlight(null);
+        return;
+      }
+      if (config.selectionMode === 'hybrid' && getZoneForElement(target)) {
+        highlight(null);
+        return;
+      }
       highlight(target);
     }
 
@@ -119,7 +125,14 @@ export function RegionSelector() {
           {
             id: 'region',
             label: `Bereich ${Math.round(w)}×${Math.round(h)}`,
-            meta: { region: { x: Math.round(x), y: Math.round(y), width: Math.round(w), height: Math.round(h) } },
+            meta: {
+              region: {
+                x: Math.round(x),
+                y: Math.round(y),
+                width: Math.round(w),
+                height: Math.round(h),
+              },
+            },
           },
           { x, y, width: w, height: h },
         );
@@ -176,7 +189,9 @@ export function RegionSelector() {
   // Always mounted + reads a live phase ref to avoid a teardown race on the
   // selecting → capturing transition.
   const phaseRef = useRef(phase);
-  useEffect(() => { phaseRef.current = phase; }, [phase]);
+  useEffect(() => {
+    phaseRef.current = phase;
+  }, [phase]);
   useEffect(() => {
     const mode = config.selectionMode;
     // Only the pointer-based selection modes hijack clicks; in 'zone'/'none'

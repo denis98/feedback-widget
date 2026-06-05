@@ -55,8 +55,22 @@ export function FeedbackProvider({
   const resolvedFields = useMemo<FeedbackField[]>(() => {
     const contact: FeedbackField[] = collectContact
       ? [
-          { name: 'name', label: 'Name', type: 'text', mapTo: 'name', placeholder: 'Dein Name', defaultValue: user?.name ?? '' },
-          { name: 'email', label: 'E-Mail', type: 'email', mapTo: 'email', placeholder: 'du@example.com', defaultValue: user?.email ?? '' },
+          {
+            name: 'name',
+            label: 'Name',
+            type: 'text',
+            mapTo: 'name',
+            placeholder: 'Dein Name',
+            defaultValue: user?.name ?? '',
+          },
+          {
+            name: 'email',
+            label: 'E-Mail',
+            type: 'email',
+            mapTo: 'email',
+            placeholder: 'du@example.com',
+            defaultValue: user?.email ?? '',
+          },
         ]
       : [];
     return [...contact, ...(fields ?? [])];
@@ -75,7 +89,9 @@ export function FeedbackProvider({
 
   // Always-current zones map for capture invoked from event handlers.
   const zonesRef = useRef(zones);
-  useEffect(() => { zonesRef.current = zones; }, [zones]);
+  useEffect(() => {
+    zonesRef.current = zones;
+  }, [zones]);
 
   const registerZone = useCallback((zone: ZoneRegistration) => {
     setZones((prev) => {
@@ -105,34 +121,37 @@ export function FeedbackProvider({
   // Captures a screenshot for the given selection (or full page) and appends it,
   // then opens the form. Invoked from click handlers so getDisplayMedia keeps
   // its required user activation.
-  const confirmSelection = useCallback(async (zone?: ZoneInfo | null, clip?: ClipRect) => {
-    if (zone !== undefined) setSelectedZone(zone);
-    const effectiveZone = zone === undefined ? selectedZone : zone;
+  const confirmSelection = useCallback(
+    async (zone?: ZoneInfo | null, clip?: ClipRect) => {
+      if (zone !== undefined) setSelectedZone(zone);
+      const effectiveZone = zone === undefined ? selectedZone : zone;
 
-    if (!screenshot) {
+      if (!screenshot) {
+        setPhase('form');
+        return;
+      }
+
+      setPhase('capturing');
+      try {
+        // A clip (free region) takes priority over resolving the zone's element.
+        const targetEl = clip
+          ? undefined
+          : effectiveZone
+            ? resolveTargetElement(effectiveZone.id, effectiveZone.cssPath, zonesRef.current)
+            : undefined;
+        const data = await captureScreenshot({
+          ...(clip !== undefined && { clip }),
+          ...(targetEl !== undefined && { targetEl }),
+          cursor: screenshotCursor,
+        });
+        setScreenshots((prev) => [...prev, data]);
+      } catch (err) {
+        console.warn('[feedback-widget] Screenshot failed:', err);
+      }
       setPhase('form');
-      return;
-    }
-
-    setPhase('capturing');
-    try {
-      // A clip (free region) takes priority over resolving the zone's element.
-      const targetEl = clip
-        ? undefined
-        : effectiveZone
-          ? resolveTargetElement(effectiveZone.id, effectiveZone.cssPath, zonesRef.current)
-          : undefined;
-      const data = await captureScreenshot({
-        ...(clip !== undefined && { clip }),
-        ...(targetEl !== undefined && { targetEl }),
-        cursor: screenshotCursor,
-      });
-      setScreenshots((prev) => [...prev, data]);
-    } catch (err) {
-      console.warn('[feedback-widget] Screenshot failed:', err);
-    }
-    setPhase('form');
-  }, [selectedZone, screenshot, screenshotCursor]);
+    },
+    [selectedZone, screenshot, screenshotCursor],
+  );
 
   const openWidget = useCallback(() => {
     // Skip selection phase when there's nothing to select.
@@ -210,9 +229,24 @@ export function FeedbackProvider({
       ...(secret !== undefined && { secret }),
     }),
     [
-      webhookUrl, projectId, user, custom, types, resolvedRetry,
-      selectionMode, autoDiscovery, screenshot, screenshotCursor, collectContact, resolvedFields, position, theme, locale,
-      onSuccess, onError, secret,
+      webhookUrl,
+      projectId,
+      user,
+      custom,
+      types,
+      resolvedRetry,
+      selectionMode,
+      autoDiscovery,
+      screenshot,
+      screenshotCursor,
+      collectContact,
+      resolvedFields,
+      position,
+      theme,
+      locale,
+      onSuccess,
+      onError,
+      secret,
     ],
   );
 
@@ -244,10 +278,25 @@ export function FeedbackProvider({
       removeScreenshotAt,
     }),
     [
-      config, zones, registerZone, unregisterZone, phase,
-      openWidget, confirmSelection, addAnotherScreenshot, skipSelection, closeWidget, selectedZone,
-      draftType, draftTitle, draftDescription, fieldValues, setFieldValue,
-      screenshots, updateScreenshotAt, removeScreenshotAt,
+      config,
+      zones,
+      registerZone,
+      unregisterZone,
+      phase,
+      openWidget,
+      confirmSelection,
+      addAnotherScreenshot,
+      skipSelection,
+      closeWidget,
+      selectedZone,
+      draftType,
+      draftTitle,
+      draftDescription,
+      fieldValues,
+      setFieldValue,
+      screenshots,
+      updateScreenshotAt,
+      removeScreenshotAt,
     ],
   );
 

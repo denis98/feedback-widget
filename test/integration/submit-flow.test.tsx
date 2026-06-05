@@ -98,9 +98,7 @@ describe('submit flow (integration)', () => {
   });
 
   test('keeps form on error (does not show success)', async () => {
-    server.use(
-      http.post(WEBHOOK_URL, () => new HttpResponse(null, { status: 500 })),
-    );
+    server.use(http.post(WEBHOOK_URL, () => new HttpResponse(null, { status: 500 })));
 
     render(
       <FeedbackProvider
@@ -159,15 +157,11 @@ describe('submit flow (integration)', () => {
     await fillAndSubmit('Callback test');
 
     await waitFor(() => expect(onSuccess).toHaveBeenCalledOnce());
-    expect(onSuccess).toHaveBeenCalledWith(
-      expect.objectContaining({ ticketId: 'TEST-1' }),
-    );
+    expect(onSuccess).toHaveBeenCalledWith(expect.objectContaining({ ticketId: 'TEST-1' }));
   });
 
   test('calls onError callback on failure', async () => {
-    server.use(
-      http.post(WEBHOOK_URL, () => new HttpResponse(null, { status: 500 })),
-    );
+    server.use(http.post(WEBHOOK_URL, () => new HttpResponse(null, { status: 500 })));
 
     const onError = vi.fn();
     render(

@@ -1,4 +1,4 @@
-import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach } from 'vitest';
 import { startAutoDiscovery } from '../../src/components/AutoDiscovery.js';
 import type { ZoneRegistration } from '../../src/types.js';
 

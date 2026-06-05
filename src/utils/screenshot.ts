@@ -54,13 +54,17 @@ function hideWidgets(): HiddenEntry[] {
 }
 
 function restoreWidgets(entries: HiddenEntry[]): void {
-  entries.forEach(({ el, display }) => { el.style.display = display; });
+  entries.forEach(({ el, display }) => {
+    el.style.display = display;
+  });
 }
 
 function hideCursor(): () => void {
   const prev = document.documentElement.style.cursor;
   document.documentElement.style.cursor = 'none';
-  return () => { document.documentElement.style.cursor = prev; };
+  return () => {
+    document.documentElement.style.cursor = prev;
+  };
 }
 
 function waitForRepaint(): Promise<void> {
@@ -222,10 +226,7 @@ async function captureViaScreenCaptureAPI(
 // ── Public API ────────────────────────────────────────────────────────────────
 
 function isUserAbort(err: unknown): boolean {
-  return (
-    err instanceof Error &&
-    (err.name === 'NotAllowedError' || err.name === 'AbortError')
-  );
+  return err instanceof Error && (err.name === 'NotAllowedError' || err.name === 'AbortError');
 }
 
 /** Scrolls an element into view if it lies (partly) outside the viewport. */
@@ -282,7 +283,10 @@ export async function captureScreenshot(options: ScreenshotOptions = {}): Promis
       return await captureViaScreenCaptureAPI(cursor, clip);
     } catch (err) {
       if (!isUserAbort(err)) {
-        console.warn('[feedback-widget] Screen Capture API failed, falling back to DOM render:', err);
+        console.warn(
+          '[feedback-widget] Screen Capture API failed, falling back to DOM render:',
+          err,
+        );
       }
       // fall through to modern-screenshot
     }

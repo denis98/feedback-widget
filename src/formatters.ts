@@ -27,7 +27,10 @@ export const formatters = {
       lines.push('', '### Custom Data', formatCustomData(payload.custom, 'markdown'));
     }
 
-    return lines.filter((l) => l !== undefined).join('\n').trim();
+    return lines
+      .filter((l) => l !== undefined)
+      .join('\n')
+      .trim();
   },
 
   toPlainText(payload: WebhookPayload): string {
@@ -89,12 +92,7 @@ export const formatters = {
 
   zoneInfo(zone: ZoneInfo | null): string {
     if (!zone) return '### Zone\n\nNo zone selected.';
-    const lines = [
-      '### Zone',
-      '',
-      `**Label:** ${zone.label}`,
-      `**ID:** ${zone.id}`,
-    ];
+    const lines = ['### Zone', '', `**Label:** ${zone.label}`, `**ID:** ${zone.id}`];
     if (zone.cssPath) lines.push(`**CSS Path:** \`${zone.cssPath}\``);
     if (zone.meta && Object.keys(zone.meta).length > 0) {
       lines.push('**Meta:**', '```json', JSON.stringify(zone.meta, null, 2), '```');
@@ -112,9 +110,6 @@ function formatUserInfo(user: NonNullable<WebhookPayload['user']>): string {
   return parts.join('\n');
 }
 
-function formatCustomData(
-  custom: Record<string, unknown>,
-  _format: 'markdown' | 'plain',
-): string {
+function formatCustomData(custom: Record<string, unknown>, _format: 'markdown' | 'plain'): string {
   return '```json\n' + JSON.stringify(custom, null, 2) + '\n```';
 }

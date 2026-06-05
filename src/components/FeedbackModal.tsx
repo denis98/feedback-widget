@@ -60,7 +60,10 @@ export function FeedbackModal() {
         return;
       }
       if (f.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        setSubmitState({ status: 'error', error: new Error(`„${f.label}": bitte eine gültige E-Mail-Adresse angeben.`) });
+        setSubmitState({
+          status: 'error',
+          error: new Error(`„${f.label}": bitte eine gültige E-Mail-Adresse angeben.`),
+        });
         return;
       }
       if (!value) continue;
@@ -140,7 +143,12 @@ export function FeedbackModal() {
         {submitState.status === 'success' ? (
           <SuccessView result={submitState.result} onClose={handleClose} styles={styles} />
         ) : (
-          <form onSubmit={(e) => { void handleSubmit(e); }} noValidate>
+          <form
+            onSubmit={(e) => {
+              void handleSubmit(e);
+            }}
+            noValidate
+          >
             {/* Type selection */}
             <div style={styles.typeRow}>
               {config.types.map((t) => (
@@ -162,7 +170,8 @@ export function FeedbackModal() {
             {config.screenshot && (
               <div style={styles.galleryWrap}>
                 <div style={styles.galleryLabel}>
-                  Screenshots {screenshots.length > 0 && `(${screenshots.length})`} – anklicken zum Vergrößern & Markieren
+                  Screenshots {screenshots.length > 0 && `(${screenshots.length})`} – anklicken zum
+                  Vergrößern & Markieren
                 </div>
                 {screenshots.length === 0 ? (
                   <div style={styles.galleryEmpty}>
@@ -240,8 +249,7 @@ export function FeedbackModal() {
                 {config.fields.map((f) => (
                   <div key={f.name} style={{ ...styles.field, flex: 1, minWidth: '160px' }}>
                     <label style={styles.label} htmlFor={`fw-field-${f.name}`}>
-                      {f.label}{' '}
-                      {!f.required && <span style={styles.optional}>(optional)</span>}
+                      {f.label} {!f.required && <span style={styles.optional}>(optional)</span>}
                     </label>
                     {f.type === 'textarea' ? (
                       <textarea
@@ -261,7 +269,9 @@ export function FeedbackModal() {
                       >
                         <option value="">–</option>
                         {(f.options ?? []).map((o) => (
-                          <option key={o.value} value={o.value}>{o.label}</option>
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
                         ))}
                       </select>
                     ) : (
@@ -272,7 +282,9 @@ export function FeedbackModal() {
                         value={fieldValues[f.name] ?? ''}
                         onChange={(e) => setFieldValue(f.name, e.target.value)}
                         placeholder={f.placeholder ?? ''}
-                        autoComplete={f.mapTo === 'email' ? 'email' : f.mapTo === 'name' ? 'name' : 'off'}
+                        autoComplete={
+                          f.mapTo === 'email' ? 'email' : f.mapTo === 'name' ? 'name' : 'off'
+                        }
                       />
                     )}
                   </div>
@@ -342,13 +354,16 @@ function SuccessView({
     <div style={styles.successView}>
       <div style={styles.successIcon}>✓</div>
       <h3 style={styles.successHeading}>Thank you!</h3>
-      <p style={styles.successText}>
-        {result.message ?? 'Your feedback has been received.'}
-      </p>
+      <p style={styles.successText}>{result.message ?? 'Your feedback has been received.'}</p>
       {result.ticketId && (
         <p style={styles.ticketInfo}>
           {result.ticketUrl ? (
-            <a href={result.ticketUrl} target="_blank" rel="noopener noreferrer" style={styles.ticketLink}>
+            <a
+              href={result.ticketUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={styles.ticketLink}
+            >
               #{result.ticketId}
             </a>
           ) : (

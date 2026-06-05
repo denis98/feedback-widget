@@ -25,9 +25,9 @@ export function startAutoDiscovery(
   unregister: UnregisterFn,
 ): () => void {
   // Register already-existing zones
-  const existing = (root instanceof Document ? root.documentElement : root).querySelectorAll<HTMLElement>(
-    '[data-feedback-zone]',
-  );
+  const existing = (
+    root instanceof Document ? root.documentElement : root
+  ).querySelectorAll<HTMLElement>('[data-feedback-zone]');
   existing.forEach((el) => {
     const zone = parseZoneElement(el);
     if (zone) register(zone);

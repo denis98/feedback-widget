@@ -20,7 +20,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      'modern-screenshot': new URL('./test/__mocks__/modern-screenshot.ts', import.meta.url).pathname,
+      'modern-screenshot': new URL('./test/__mocks__/modern-screenshot.ts', import.meta.url)
+        .pathname,
     },
   },
 });

@@ -14,11 +14,7 @@ export interface ClipRect {
 
 export type Theme = 'light' | 'dark' | 'auto';
 
-export type Position =
-  | 'bottom-right'
-  | 'bottom-left'
-  | 'top-right'
-  | 'top-left';
+export type Position = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
 
 export interface ZoneInfo {
   id: string;

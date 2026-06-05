@@ -13,7 +13,10 @@ import React, { useEffect, useRef, useState, useCallback } from 'react';
 
 type Tool = 'pen' | 'rect';
 
-interface Point { x: number; y: number; }
+interface Point {
+  x: number;
+  y: number;
+}
 
 type Shape =
   | { type: 'pen'; color: string; width: number; points: Point[] }
@@ -92,11 +95,15 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
     img.src = src;
   }, [src]);
 
-  useEffect(() => { redraw(); }, [redraw, ready]);
+  useEffect(() => {
+    redraw();
+  }, [redraw, ready]);
 
   // Close on Escape.
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [onClose]);
@@ -157,7 +164,13 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
   const s = getStyles(isDark);
 
   return (
-    <div style={s.overlay} data-feedback-widget role="dialog" aria-modal="true" aria-label="Screenshot bearbeiten">
+    <div
+      style={s.overlay}
+      data-feedback-widget
+      role="dialog"
+      aria-modal="true"
+      aria-label="Screenshot bearbeiten"
+    >
       <div style={s.toolbar}>
         <div style={s.group}>
           <button
@@ -196,17 +209,33 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
         </div>
 
         <div style={s.group}>
-          <button type="button" onClick={handleUndo} disabled={shapes.length === 0} style={s.actionBtn} title="Rückgängig">
+          <button
+            type="button"
+            onClick={handleUndo}
+            disabled={shapes.length === 0}
+            style={s.actionBtn}
+            title="Rückgängig"
+          >
             ↶ Zurück
           </button>
-          <button type="button" onClick={handleClear} disabled={shapes.length === 0} style={s.actionBtn} title="Alles löschen">
+          <button
+            type="button"
+            onClick={handleClear}
+            disabled={shapes.length === 0}
+            style={s.actionBtn}
+            title="Alles löschen"
+          >
             🗑 Leeren
           </button>
         </div>
 
         <div style={{ ...s.group, marginLeft: 'auto' }}>
-          <button type="button" onClick={onClose} style={s.cancelBtn}>Abbrechen</button>
-          <button type="button" onClick={handleSave} style={s.saveBtn}>✓ Übernehmen</button>
+          <button type="button" onClick={onClose} style={s.cancelBtn}>
+            Abbrechen
+          </button>
+          <button type="button" onClick={handleSave} style={s.saveBtn}>
+            ✓ Übernehmen
+          </button>
         </div>
       </div>
 

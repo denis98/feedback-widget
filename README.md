@@ -43,9 +43,9 @@ export function App() {
   return (
     <FeedbackProvider
       webhookUrl="/api/feedback"
-      selectionMode="pixel"   // click an element OR drag a region
+      selectionMode="pixel" // click an element OR drag a region
       screenshot
-      collectContact          // optional name + email fields
+      collectContact // optional name + email fields
       user={{ id: '42', email: 'a@b.c', name: 'Ada' }}
     >
       <YourApp />
@@ -60,13 +60,13 @@ the widget yourself via `useFeedbackContext()`.
 
 ## Selection modes
 
-| Mode     | Behaviour                                                                 |
-| -------- | ------------------------------------------------------------------------- |
-| `zone`   | Only `<FeedbackZone>` regions are selectable.                             |
-| `pixel`  | Click an element or drag a free region.                                  |
-| `hybrid` | Zones take priority; element/region selection applies everywhere else.    |
-| `region` | Drag-to-select region only.                                              |
-| `none`   | Skip selection and open the form directly.                               |
+| Mode     | Behaviour                                                              |
+| -------- | ---------------------------------------------------------------------- |
+| `zone`   | Only `<FeedbackZone>` regions are selectable.                          |
+| `pixel`  | Click an element or drag a free region.                                |
+| `hybrid` | Zones take priority; element/region selection applies everywhere else. |
+| `region` | Drag-to-select region only.                                            |
+| `none`   | Skip selection and open the form directly.                             |
 
 When `screenshot` is enabled the selection bar also offers **🖥 Ganzer
 Bildschirm** and **Ohne Screenshot** (text-only).
@@ -90,10 +90,17 @@ Screenshots are delivered as base64 PNG data URLs (`screenshots: string[]`, plus
 <FeedbackProvider
   webhookUrl="/api/feedback"
   fields={[
-    { name: 'name',  label: 'Name',  type: 'text',  mapTo: 'name' },
+    { name: 'name', label: 'Name', type: 'text', mapTo: 'name' },
     { name: 'email', label: 'E-Mail', type: 'email', mapTo: 'email' },
-    { name: 'severity', label: 'Severity', type: 'select',
-      options: [{ value: 'low', label: 'Low' }, { value: 'high', label: 'High' }] },
+    {
+      name: 'severity',
+      label: 'Severity',
+      type: 'select',
+      options: [
+        { value: 'low', label: 'Low' },
+        { value: 'high', label: 'High' },
+      ],
+    },
   ]}
 >
   {/* … */}
@@ -107,7 +114,7 @@ Screenshots are delivered as base64 PNG data URLs (`screenshots: string[]`, plus
 ```ts
 interface WebhookPayload {
   projectId: string;
-  feedbackId: string;        // UUID
+  feedbackId: string; // UUID
   type: 'bug' | 'feature' | 'general';
   title: string;
   description: string;

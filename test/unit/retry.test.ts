@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { submitWithRetry, WebhookError } from '../../src/utils/retry.js';
 import type { WebhookPayload } from '../../src/types.js';
 
@@ -33,19 +33,30 @@ describe('submitWithRetry', () => {
   it('succeeds immediately on 200', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(200, { ticketId: 'T-1' }));
 
-    const result = await submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 3 }, fetchMock);
+    const result = await submitWithRetry(
+      mockPayload,
+      'http://test/webhook',
+      { maxRetries: 3 },
+      fetchMock,
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(result.ticketId).toBe('T-1');
   });
 
   it('retries on 500 and succeeds on third attempt', async () => {
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(makeResponse(500))
       .mockResolvedValueOnce(makeResponse(500))
       .mockResolvedValueOnce(makeResponse(200, {}));
 
-    await submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 3, baseDelay: 0 }, fetchMock);
+    await submitWithRetry(
+      mockPayload,
+      'http://test/webhook',
+      { maxRetries: 3, baseDelay: 0 },
+      fetchMock,
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -54,7 +65,12 @@ describe('submitWithRetry', () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(401));
 
     await expect(
-      submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 3, baseDelay: 0 }, fetchMock),
+      submitWithRetry(
+        mockPayload,
+        'http://test/webhook',
+        { maxRetries: 3, baseDelay: 0 },
+        fetchMock,
+      ),
     ).rejects.toThrow(WebhookError);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -64,19 +80,30 @@ describe('submitWithRetry', () => {
     const fetchMock = vi.fn().mockResolvedValue(makeResponse(500));
 
     await expect(
-      submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 2, baseDelay: 0 }, fetchMock),
+      submitWithRetry(
+        mockPayload,
+        'http://test/webhook',
+        { maxRetries: 2, baseDelay: 0 },
+        fetchMock,
+      ),
     ).rejects.toThrow();
 
     expect(fetchMock).toHaveBeenCalledTimes(3); // 1 initial + 2 retries
   });
 
   it('retries on network error (fetch throws)', async () => {
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockRejectedValueOnce(new Error('Network error'))
       .mockRejectedValueOnce(new Error('Network error'))
       .mockResolvedValueOnce(makeResponse(200, {}));
 
-    await submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 3, baseDelay: 0 }, fetchMock);
+    await submitWithRetry(
+      mockPayload,
+      'http://test/webhook',
+      { maxRetries: 3, baseDelay: 0 },
+      fetchMock,
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
@@ -84,7 +111,12 @@ describe('submitWithRetry', () => {
   it('returns empty object on 200 with empty body', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(200));
 
-    const result = await submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 0 }, fetchMock);
+    const result = await submitWithRetry(
+      mockPayload,
+      'http://test/webhook',
+      { maxRetries: 0 },
+      fetchMock,
+    );
 
     expect(result).toEqual({});
   });
@@ -93,18 +125,29 @@ describe('submitWithRetry', () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(422));
 
     await expect(
-      submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 3, baseDelay: 0 }, fetchMock),
+      submitWithRetry(
+        mockPayload,
+        'http://test/webhook',
+        { maxRetries: 3, baseDelay: 0 },
+        fetchMock,
+      ),
     ).rejects.toBeInstanceOf(WebhookError);
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('retries on 429 (rate limit)', async () => {
-    const fetchMock = vi.fn()
+    const fetchMock = vi
+      .fn()
       .mockResolvedValueOnce(makeResponse(429))
       .mockResolvedValueOnce(makeResponse(200, {}));
 
-    await submitWithRetry(mockPayload, 'http://test/webhook', { maxRetries: 3, baseDelay: 0 }, fetchMock);
+    await submitWithRetry(
+      mockPayload,
+      'http://test/webhook',
+      { maxRetries: 3, baseDelay: 0 },
+      fetchMock,
+    );
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });

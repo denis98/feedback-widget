@@ -33,9 +33,7 @@ function getElementSelector(el: Element): string {
 
   const parent = el.parentElement;
   if (parent) {
-    const siblings = Array.from(parent.children).filter(
-      (c) => c.tagName === el.tagName,
-    );
+    const siblings = Array.from(parent.children).filter((c) => c.tagName === el.tagName);
     if (siblings.length > 1) {
       const index = siblings.indexOf(el) + 1;
       return `${tag}${classes}:nth-child(${index})`;

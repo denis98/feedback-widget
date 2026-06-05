@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      # Validate package.json exports / types resolution.
+      - run: npx publint
+      # Informational: type resolution across module systems (non-blocking;
+      # @arethetypeswrong/cli currently errors on some Node/npm versions).
+      - run: npx @arethetypeswrong/cli --pack
+        continue-on-error: true

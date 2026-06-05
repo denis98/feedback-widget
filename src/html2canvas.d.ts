@@ -5,6 +5,9 @@ declare module 'html2canvas' {
     logging?: boolean;
     [key: string]: unknown;
   }
-  function html2canvas(element: HTMLElement, options?: Html2CanvasOptions): Promise<HTMLCanvasElement>;
+  function html2canvas(
+    element: HTMLElement,
+    options?: Html2CanvasOptions,
+  ): Promise<HTMLCanvasElement>;
   export default html2canvas;
 }

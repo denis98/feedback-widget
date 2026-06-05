@@ -1,7 +1,7 @@
 ---
 name: Bug report
 about: Report a problem with the feedback widget
-title: "[Bug] "
+title: '[Bug] '
 labels: bug
 ---
 
@@ -10,6 +10,7 @@ A clear and concise description of what the bug is.
 
 **To reproduce**
 Steps to reproduce the behavior:
+
 1. …
 
 **Expected behavior**
@@ -19,6 +20,7 @@ What you expected to happen.
 If applicable, add visuals.
 
 **Environment**
+
 - Package version:
 - React version:
 - Browser + OS:

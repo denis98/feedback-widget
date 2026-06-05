@@ -88,13 +88,22 @@ export const ZoneMode: Story = {
         </FeedbackZone>
         <div>
           <FeedbackZone id="header" label="Header">
-            <header style={{ background: '#f1f5f9', padding: '16px 24px', borderBottom: '1px solid #e2e8f0' }}>
+            <header
+              style={{
+                background: '#f1f5f9',
+                padding: '16px 24px',
+                borderBottom: '1px solid #e2e8f0',
+              }}
+            >
               <h1 style={{ margin: 0, fontSize: '18px' }}>App Header</h1>
             </header>
           </FeedbackZone>
           <FeedbackZone id="main" label="Main Content">
             <main style={{ padding: '24px' }}>
-              <p>Main content. Hover the zones (sidebar, header, main) to see the selection highlight.</p>
+              <p>
+                Main content. Hover the zones (sidebar, header, main) to see the selection
+                highlight.
+              </p>
             </main>
           </FeedbackZone>
         </div>
@@ -203,7 +212,10 @@ export const AutoDiscovery: Story = {
           style={{ background: '#f0fdf4', padding: '20px' }}
         >
           <h2>Auto-Discovered Header</h2>
-          <p>This zone is detected via <code>data-feedback-zone</code> attribute – no React import needed.</p>
+          <p>
+            This zone is detected via <code>data-feedback-zone</code> attribute – no React import
+            needed.
+          </p>
         </div>
         <div
           data-feedback-zone="auto-content"

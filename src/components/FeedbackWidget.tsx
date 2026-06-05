@@ -30,10 +30,9 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
 
   // ── Floating trigger button (idle) ─────────────────────────────────────
   const triggerElement: ReactNode =
-    phase !== 'idle' ? null                                    // hide while active
-    : trigger === null ? null
-    : trigger !== undefined ? trigger({ open: openWidget, isOpen: false })
-    : (
+    phase !== 'idle' ? null : trigger === null ? null : trigger !== undefined ? ( // hide while active
+      trigger({ open: openWidget, isOpen: false })
+    ) : (
       <button
         type="button"
         onClick={openWidget}
@@ -58,120 +57,124 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
           fontFamily: 'system-ui, -apple-system, sans-serif',
           transition: 'transform 0.15s ease',
         }}
-        onMouseEnter={(e) => { (e.currentTarget).style.transform = 'scale(1.05)'; }}
-        onMouseLeave={(e) => { (e.currentTarget).style.transform = 'scale(1)'; }}
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+        }}
       >
         💬 Feedback
       </button>
     );
 
   // ── Selection bar (selecting phase) ────────────────────────────────────
-  const selectionBar: ReactNode = phase === 'selecting' ? (
-    <div
-      data-feedback-widget
-      style={{
-        position: 'fixed',
-        bottom: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9998,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '10px 20px',
-        borderRadius: '999px',
-        backgroundColor: isDark ? '#1f2937' : '#1e293b',
-        color: '#ffffff',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '14px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      {selectedZone ? (
-        <>
-          <span>📍 <strong>{selectedZone.label}</strong> ausgewählt</span>
-          <button
-            type="button"
-            onClick={() => confirmSelection()}
-            style={selectionActionBtn('#22c55e')}
-          >
-            Weiter →
-          </button>
-          <button
-            type="button"
-            onClick={() => confirmSelection(null)}
-            style={selectionActionBtn('#64748b')}
-          >
-            Auswahl entfernen
-          </button>
-        </>
-      ) : (
-        <>
-          <span>🎯 Bereich aufziehen oder Element anklicken –</span>
-          <button
-            type="button"
-            onClick={() => confirmSelection(null)}
-            style={selectionActionBtn('#2563eb')}
-          >
-            {config.screenshot ? '🖥 Ganzer Bildschirm' : 'Überspringen'}
-          </button>
-          {config.screenshot && (
-            <button
-              type="button"
-              onClick={skipSelection}
-              style={selectionActionBtn('#64748b')}
-            >
-              Ohne Screenshot
-            </button>
-          )}
-        </>
-      )}
-      <button
-        type="button"
-        onClick={closeWidget}
-        aria-label="Abbrechen"
+  const selectionBar: ReactNode =
+    phase === 'selecting' ? (
+      <div
+        data-feedback-widget
         style={{
-          background: 'none',
-          border: 'none',
-          color: '#94a3b8',
-          cursor: 'pointer',
-          fontSize: '16px',
-          padding: '0 4px',
-          lineHeight: 1,
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9998,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          padding: '10px 20px',
+          borderRadius: '999px',
+          backgroundColor: isDark ? '#1f2937' : '#1e293b',
+          color: '#ffffff',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '14px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+          whiteSpace: 'nowrap',
         }}
       >
-        ✕
-      </button>
-    </div>
-  ) : null;
+        {selectedZone ? (
+          <>
+            <span>
+              📍 <strong>{selectedZone.label}</strong> ausgewählt
+            </span>
+            <button
+              type="button"
+              onClick={() => confirmSelection()}
+              style={selectionActionBtn('#22c55e')}
+            >
+              Weiter →
+            </button>
+            <button
+              type="button"
+              onClick={() => confirmSelection(null)}
+              style={selectionActionBtn('#64748b')}
+            >
+              Auswahl entfernen
+            </button>
+          </>
+        ) : (
+          <>
+            <span>🎯 Bereich aufziehen oder Element anklicken –</span>
+            <button
+              type="button"
+              onClick={() => confirmSelection(null)}
+              style={selectionActionBtn('#2563eb')}
+            >
+              {config.screenshot ? '🖥 Ganzer Bildschirm' : 'Überspringen'}
+            </button>
+            {config.screenshot && (
+              <button type="button" onClick={skipSelection} style={selectionActionBtn('#64748b')}>
+                Ohne Screenshot
+              </button>
+            )}
+          </>
+        )}
+        <button
+          type="button"
+          onClick={closeWidget}
+          aria-label="Abbrechen"
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#94a3b8',
+            cursor: 'pointer',
+            fontSize: '16px',
+            padding: '0 4px',
+            lineHeight: 1,
+          }}
+        >
+          ✕
+        </button>
+      </div>
+    ) : null;
 
   // ── Capturing indicator ────────────────────────────────────────────────
-  const capturingBar: ReactNode = phase === 'capturing' ? (
-    <div
-      data-feedback-widget
-      style={{
-        position: 'fixed',
-        bottom: '24px',
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 9998,
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        padding: '10px 20px',
-        borderRadius: '999px',
-        backgroundColor: isDark ? '#1f2937' : '#1e293b',
-        color: '#ffffff',
-        fontFamily: 'system-ui, -apple-system, sans-serif',
-        fontSize: '14px',
-        boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-        whiteSpace: 'nowrap',
-      }}
-    >
-      📸 Screenshot wird erstellt…
-    </div>
-  ) : null;
+  const capturingBar: ReactNode =
+    phase === 'capturing' ? (
+      <div
+        data-feedback-widget
+        style={{
+          position: 'fixed',
+          bottom: '24px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          zIndex: 9998,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '10px',
+          padding: '10px 20px',
+          borderRadius: '999px',
+          backgroundColor: isDark ? '#1f2937' : '#1e293b',
+          color: '#ffffff',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontSize: '14px',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        📸 Screenshot wird erstellt…
+      </div>
+    ) : null;
 
   return (
     <>

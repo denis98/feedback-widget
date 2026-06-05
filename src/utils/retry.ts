@@ -88,11 +88,7 @@ export async function submitWithRetry(
         );
       }
 
-      lastError = new WebhookError(
-        `Webhook returned ${response.status}`,
-        response.status,
-        true,
-      );
+      lastError = new WebhookError(`Webhook returned ${response.status}`, response.status, true);
     } catch (err) {
       if (err instanceof WebhookError && !err.retryable) throw err;
       lastError = err instanceof Error ? err : new WebhookError(String(err));
