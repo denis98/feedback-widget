@@ -64,6 +64,10 @@ export interface Messages {
     submitting: string;
     /** Prefix for the affected page URL (e.g. shown as `Page: <url>`). */
     pageLabel: string;
+    /** Prefix for the submitter's name appended to the description. */
+    nameLabel: string;
+    /** Prefix for the submitter's email appended to the description. */
+    emailLabel: string;
   };
   success: { heading: string; message: string; close: string };
   annotator: {
@@ -129,6 +133,8 @@ const en: Messages = {
     submit: 'Submit',
     submitting: 'Sending…',
     pageLabel: 'Page',
+    nameLabel: 'Name',
+    emailLabel: 'Email',
   },
   success: {
     heading: 'Thank you!',
@@ -193,6 +199,8 @@ const de: Messages = {
     submit: 'Absenden',
     submitting: 'Wird gesendet…',
     pageLabel: 'Seite',
+    nameLabel: 'Name',
+    emailLabel: 'E-Mail',
   },
   success: {
     heading: 'Danke!',

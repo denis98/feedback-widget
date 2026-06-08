@@ -201,6 +201,10 @@ describe('submit flow (integration)', () => {
     await waitFor(() => expect(capturedPayloads).toHaveLength(1));
     expect(capturedPayloads[0]?.user?.email).toBe('anna@acme.com');
     expect(capturedPayloads[0]?.user?.name).toBe('Anna');
+    // Contact + URL are appended to the description, just like the page URL.
+    expect(capturedPayloads[0]?.description).toBe(
+      `Name: Anna\nEmail: anna@acme.com\nPage: ${window.location.href}`,
+    );
   });
 
   test('hidden fields are submitted but not rendered', async () => {

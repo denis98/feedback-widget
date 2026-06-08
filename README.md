@@ -183,6 +183,12 @@ interface WebhookPayload {
 }
 ```
 
+The submitter's name/email (from the `user` prop or `mapTo` fields) and the
+affected page URL are also appended to `description` as plain lines (`Name: …`,
+`Email: …`, `Page: …`), so they show up in ticket text even if your sink only
+renders the description. They remain available structured in `user` /
+`context.url` too.
+
 Return a `WebhookResponse` (`{ ticketId?, ticketUrl?, message? }`) to show a
 confirmation linking to the created ticket. Set `secret` to sign the body
 (`X-Feedback-Signature`, HMAC-SHA256). `formatters` (`toMarkdown`,

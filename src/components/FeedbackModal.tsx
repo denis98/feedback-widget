@@ -87,12 +87,15 @@ export function FeedbackModal() {
 
     setSubmitState({ status: 'submitting' });
 
-    // Append the affected page URL to the description so it shows up in the
-    // ticket text (not just in context.url).
+    // Append context (submitter contact + affected page URL) to the description
+    // so it shows up in the ticket text — not just in payload.user / context.url.
     const description = draftDescription.trim();
-    const fullDescription = pageUrl
-      ? `${description}${description ? '\n\n' : ''}${m.form.pageLabel}: ${pageUrl}`
-      : description;
+    const metaLines = [
+      mergedUser?.name && `${m.form.nameLabel}: ${mergedUser.name}`,
+      mergedUser?.email && `${m.form.emailLabel}: ${mergedUser.email}`,
+      pageUrl && `${m.form.pageLabel}: ${pageUrl}`,
+    ].filter(Boolean);
+    const fullDescription = [description, metaLines.join('\n')].filter(Boolean).join('\n\n');
 
     const payload = buildPayload({
       type: draftType,
