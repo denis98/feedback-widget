@@ -50,6 +50,9 @@ export function FeedbackProvider({
   const [draftTitle, setDraftTitle] = useState('');
   const [draftDescription, setDraftDescription] = useState('');
   const [screenshots, setScreenshots] = useState<string[]>([]);
+  // URL of the page the feedback is about, captured when the widget opens so it
+  // survives SPA navigation between opening and submitting.
+  const [pageUrl, setPageUrl] = useState('');
 
   // Flexible form schema: optional contact fields (sugar) + app-defined fields.
   const resolvedFields = useMemo<FeedbackField[]>(() => {
@@ -154,6 +157,9 @@ export function FeedbackProvider({
   );
 
   const openWidget = useCallback(() => {
+    // Capture the page URL at the start of the feedback session, before any
+    // SPA navigation can change window.location.
+    if (typeof window !== 'undefined') setPageUrl(window.location.href);
     // Skip selection phase when there's nothing to select.
     if (selectionMode === 'none') {
       void confirmSelection(null);
@@ -175,6 +181,7 @@ export function FeedbackProvider({
 
   // Open the form straight away, no screenshot captured.
   const skipSelection = useCallback(() => {
+    if (typeof window !== 'undefined') setPageUrl(window.location.href);
     setSelectedZone(null);
     setPhase('form');
   }, []);
@@ -265,6 +272,7 @@ export function FeedbackProvider({
       closeWidget,
       selectedZone,
       setSelectedZone,
+      pageUrl,
       draftType,
       setDraftType,
       draftTitle,
@@ -289,6 +297,7 @@ export function FeedbackProvider({
       skipSelection,
       closeWidget,
       selectedZone,
+      pageUrl,
       draftType,
       draftTitle,
       draftDescription,

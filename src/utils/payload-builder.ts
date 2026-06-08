@@ -35,7 +35,7 @@ export function buildPayload(input: BuildPayloadInput): WebhookPayload {
     description: input.description,
     zone: input.zone ?? null,
     context: {
-      url: typeof window !== 'undefined' ? window.location.href : '',
+      url: input.url ?? (typeof window !== 'undefined' ? window.location.href : ''),
       userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : '',
       viewport: getViewport(),
       timestamp: new Date().toISOString(),

@@ -119,7 +119,7 @@ interface WebhookPayload {
   title: string;
   description: string;
   zone: ZoneInfo | null;
-  context: { url; userAgent; viewport; timestamp; locale };
+  context: { url; userAgent; viewport; timestamp; locale }; // url = affected page, captured when the widget opened
   user: { id?; email?; name? } | null;
   screenshot: string | null; // data:image/png;base64,…  (= screenshots[0])
   screenshots: string[];

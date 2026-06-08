@@ -28,6 +28,7 @@ export function FeedbackModal() {
     config,
     closeWidget,
     selectedZone,
+    pageUrl,
     draftType,
     setDraftType,
     draftTitle,
@@ -81,12 +82,20 @@ export function FeedbackModal() {
 
     setSubmitState({ status: 'submitting' });
 
+    // Append the affected page URL to the description so it shows up in the
+    // ticket text (not just in context.url).
+    const description = draftDescription.trim();
+    const fullDescription = pageUrl
+      ? `${description}${description ? '\n\n' : ''}Seite: ${pageUrl}`
+      : description;
+
     const payload = buildPayload({
       type: draftType,
       title: draftTitle.trim(),
-      description: draftDescription.trim(),
+      description: fullDescription,
       zone: selectedZone,
       screenshots,
+      ...(pageUrl && { url: pageUrl }),
       projectId: config.projectId,
       user: mergedUser,
       custom: mergedCustom,
@@ -165,6 +174,13 @@ export function FeedbackModal() {
                 </button>
               ))}
             </div>
+
+            {/* Affected page URL */}
+            {pageUrl && (
+              <div style={styles.urlBadge} title={pageUrl}>
+                🔗 <span style={styles.urlText}>{pageUrl}</span>
+              </div>
+            )}
 
             {/* Screenshot gallery */}
             {config.screenshot && (
@@ -442,6 +458,23 @@ function getStyles(isDark: boolean) {
       borderColor: '#2563eb',
       backgroundColor: '#eff6ff',
       color: '#1d4ed8',
+    },
+    urlBadge: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '6px',
+      padding: '8px 12px',
+      backgroundColor: inputBg,
+      border: `1px solid ${border}`,
+      borderRadius: '6px',
+      marginBottom: '16px',
+      fontSize: '12px',
+      color: mutedText,
+    },
+    urlText: {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap' as const,
     },
     galleryWrap: { marginBottom: '16px' },
     galleryLabel: {

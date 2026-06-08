@@ -186,6 +186,11 @@ export interface FeedbackContextValue {
   closeWidget: () => void;
   selectedZone: ZoneInfo | null;
   setSelectedZone: (zone: ZoneInfo | null) => void;
+  /**
+   * URL of the page the feedback is about, captured when the widget opened.
+   * Survives SPA navigation between opening and submitting.
+   */
+  pageUrl: string;
 
   // ── Draft (lifted here so it survives the modal unmounting during capture
   //    and SPA page navigation between captures) ──
@@ -216,4 +221,10 @@ export interface BuildPayloadInput {
   projectId: string;
   user: UserInfo | null;
   custom: Record<string, unknown>;
+  /**
+   * URL of the page the feedback is about. Captured when the widget opens so it
+   * survives SPA navigation between opening and submitting. Falls back to
+   * `window.location.href` at submit time when omitted.
+   */
+  url?: string;
 }

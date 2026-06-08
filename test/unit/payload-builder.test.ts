@@ -50,6 +50,22 @@ describe('buildPayload', () => {
     expect(payload.custom['sprint']).toBe('S24-01');
   });
 
+  test('uses the provided url for context.url', () => {
+    const payload = buildPayload({
+      ...base,
+      type: 'bug',
+      title: 'T',
+      description: '',
+      url: 'https://app.example.com/orders/42',
+    });
+    expect(payload.context.url).toBe('https://app.example.com/orders/42');
+  });
+
+  test('falls back to window.location.href when url is omitted', () => {
+    const payload = buildPayload({ ...base, type: 'bug', title: 'T', description: '' });
+    expect(payload.context.url).toBe(window.location.href);
+  });
+
   test('context.timestamp is ISO 8601', () => {
     const payload = buildPayload({ ...base, type: 'bug', title: 'T', description: '' });
     expect(() => new Date(payload.context.timestamp)).not.toThrow();

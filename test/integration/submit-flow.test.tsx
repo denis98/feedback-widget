@@ -58,7 +58,11 @@ describe('submit flow (integration)', () => {
 
     expect(capturedPayloads).toHaveLength(1);
     expect(capturedPayloads[0]?.title).toBe('My feedback title');
-    expect(capturedPayloads[0]?.description).toBe('Some description');
+    // The affected page URL is appended to the description and also in context.url.
+    expect(capturedPayloads[0]?.description).toBe(
+      `Some description\n\nSeite: ${window.location.href}`,
+    );
+    expect(capturedPayloads[0]?.context.url).toBe(window.location.href);
     expect(capturedPayloads[0]?.projectId).toBe('test-project');
   });
 
