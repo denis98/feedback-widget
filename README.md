@@ -109,6 +109,20 @@ Screenshots are delivered as base64 PNG data URLs (`screenshots: string[]`, plus
 
 `mapTo` fields go into `payload.user`; everything else into `payload.custom`.
 
+To send known data (e.g. the logged-in user's contact) **without showing an
+input**, mark a field `hidden` and give it a `defaultValue` — it's submitted
+silently and skips validation:
+
+```tsx
+fields={[
+  { name: 'email', label: 'E-Mail', type: 'email', mapTo: 'email', hidden: true, defaultValue: user.email },
+  { name: 'plan', label: 'Plan', hidden: true, defaultValue: user.plan },
+]}
+```
+
+(For just the user's identity, the `user` prop already lands in `payload.user`
+with no fields at all.)
+
 ## Localization
 
 Two message packs ship built in: `en` (default) and `de`. Pick one with `locale`:

@@ -40,6 +40,7 @@ export function FeedbackModal() {
   } = useFeedbackContext();
 
   const m = config.messages;
+  const visibleFields = config.fields.filter((f) => !f.hidden);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
   const [annotateIndex, setAnnotateIndex] = useState<number | null>(null);
   const annotateSrc = annotateIndex !== null ? screenshots[annotateIndex] : undefined;
@@ -53,19 +54,23 @@ export function FeedbackModal() {
     const customFromFields: Record<string, unknown> = {};
     for (const f of config.fields) {
       const value = (fieldValues[f.name] ?? '').trim();
-      if (f.required && !value) {
-        setSubmitState({
-          status: 'error',
-          error: new Error(format(m.form.requiredField, { field: f.label })),
-        });
-        return;
-      }
-      if (f.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-        setSubmitState({
-          status: 'error',
-          error: new Error(format(m.form.invalidEmail, { field: f.label })),
-        });
-        return;
+      // Hidden fields carry prefilled values straight into the payload; the user
+      // can't edit them, so they skip validation.
+      if (!f.hidden) {
+        if (f.required && !value) {
+          setSubmitState({
+            status: 'error',
+            error: new Error(format(m.form.requiredField, { field: f.label })),
+          });
+          return;
+        }
+        if (f.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+          setSubmitState({
+            status: 'error',
+            error: new Error(format(m.form.invalidEmail, { field: f.label })),
+          });
+          return;
+        }
       }
       if (!value) continue;
       if (f.mapTo) userFromFields[f.mapTo] = value;
@@ -264,10 +269,11 @@ export function FeedbackModal() {
               />
             </div>
 
-            {/* Flexible, app-defined fields (incl. optional contact via collectContact) */}
-            {config.fields.length > 0 && (
+            {/* Flexible, app-defined fields (incl. optional contact via collectContact).
+                Hidden fields are submitted with their prefilled value but not rendered. */}
+            {visibleFields.length > 0 && (
               <div style={styles.contactRow}>
-                {config.fields.map((f) => (
+                {visibleFields.map((f) => (
                   <div key={f.name} style={{ ...styles.field, flex: 1, minWidth: '160px' }}>
                     <label style={styles.label} htmlFor={`fw-field-${f.name}`}>
                       {f.label}{' '}

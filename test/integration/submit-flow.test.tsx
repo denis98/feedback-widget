@@ -203,6 +203,38 @@ describe('submit flow (integration)', () => {
     expect(capturedPayloads[0]?.user?.name).toBe('Anna');
   });
 
+  test('hidden fields are submitted but not rendered', async () => {
+    render(
+      <FeedbackProvider
+        webhookUrl={WEBHOOK_URL}
+        fields={[
+          {
+            name: 'email',
+            label: 'E-Mail',
+            type: 'email',
+            mapTo: 'email',
+            hidden: true,
+            defaultValue: 'silent@acme.com',
+          },
+          { name: 'plan', label: 'Plan', hidden: true, defaultValue: 'pro' },
+        ]}
+      >
+        <div>App</div>
+      </FeedbackProvider>,
+    );
+
+    await fillAndSubmit('Hidden field test');
+
+    // No inputs rendered for the hidden fields.
+    expect(screen.queryByLabelText(/E-Mail/i)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Plan/i)).not.toBeInTheDocument();
+
+    await waitFor(() => expect(capturedPayloads).toHaveLength(1));
+    // …but their prefilled values reach the payload (mapTo → user, else custom).
+    expect(capturedPayloads[0]?.user?.email).toBe('silent@acme.com');
+    expect(capturedPayloads[0]?.custom['plan']).toBe('pro');
+  });
+
   test('payload includes custom data', async () => {
     render(
       <FeedbackProvider

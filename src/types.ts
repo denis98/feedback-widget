@@ -41,6 +41,12 @@ export interface FeedbackField {
   mapTo?: 'name' | 'email' | 'id';
   /** Prefill value (e.g. from the host app's known user). */
   defaultValue?: string;
+  /**
+   * Submit the (prefilled) value with the payload but don't render an input.
+   * Useful for passing known contact data along silently. Hidden fields skip
+   * validation. Default: false.
+   */
+  hidden?: boolean;
 }
 
 export interface FeedbackContext {
