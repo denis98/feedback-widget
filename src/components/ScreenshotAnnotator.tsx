@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { format } from '../i18n.js';
+import type { Messages } from '../i18n.js';
 
 /**
  * Full-screen screenshot viewer + annotator.
@@ -28,11 +30,19 @@ const DEFAULT_COLOR = '#ef4444';
 interface ScreenshotAnnotatorProps {
   src: string;
   isDark: boolean;
+  messages: Messages;
   onSave: (dataUrl: string) => void;
   onClose: () => void;
 }
 
-export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: ScreenshotAnnotatorProps) {
+export function ScreenshotAnnotator({
+  src,
+  isDark,
+  messages,
+  onSave,
+  onClose,
+}: ScreenshotAnnotatorProps) {
+  const m = messages.annotator;
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
   const drawingRef = useRef<Shape | null>(null);
@@ -169,7 +179,7 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
       data-feedback-widget
       role="dialog"
       aria-modal="true"
-      aria-label="Screenshot bearbeiten"
+      aria-label={m.title}
     >
       <div style={s.toolbar}>
         <div style={s.group}>
@@ -177,17 +187,17 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
             type="button"
             onClick={() => setTool('pen')}
             style={{ ...s.toolBtn, ...(tool === 'pen' ? s.toolBtnActive : {}) }}
-            title="Freihand zeichnen"
+            title={m.penTitle}
           >
-            ✏️ Stift
+            {m.pen}
           </button>
           <button
             type="button"
             onClick={() => setTool('rect')}
             style={{ ...s.toolBtn, ...(tool === 'rect' ? s.toolBtnActive : {}) }}
-            title="Rechteck markieren"
+            title={m.rectTitle}
           >
-            ▭ Rahmen
+            {m.rect}
           </button>
         </div>
 
@@ -197,7 +207,7 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
               key={c}
               type="button"
               onClick={() => setColor(c)}
-              aria-label={`Farbe ${c}`}
+              aria-label={format(m.color, { color: c })}
               style={{
                 ...s.swatch,
                 backgroundColor: c,
@@ -214,27 +224,27 @@ export function ScreenshotAnnotator({ src, isDark, onSave, onClose }: Screenshot
             onClick={handleUndo}
             disabled={shapes.length === 0}
             style={s.actionBtn}
-            title="Rückgängig"
+            title={m.undoTitle}
           >
-            ↶ Zurück
+            {m.undo}
           </button>
           <button
             type="button"
             onClick={handleClear}
             disabled={shapes.length === 0}
             style={s.actionBtn}
-            title="Alles löschen"
+            title={m.clearTitle}
           >
-            🗑 Leeren
+            {m.clear}
           </button>
         </div>
 
         <div style={{ ...s.group, marginLeft: 'auto' }}>
           <button type="button" onClick={onClose} style={s.cancelBtn}>
-            Abbrechen
+            {m.cancel}
           </button>
           <button type="button" onClick={handleSave} style={s.saveBtn}>
-            ✓ Übernehmen
+            {m.save}
           </button>
         </div>
       </div>

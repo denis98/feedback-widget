@@ -38,8 +38,9 @@ describe('FeedbackZone', () => {
       </FeedbackProvider>,
     );
 
-    // Open modal first
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
+    // Open via the hover trigger → pick a type
+    await user.hover(screen.getByRole('button', { name: /open feedback/i }));
+    await user.click(await screen.findByRole('button', { name: /feedback: bug/i }));
     // Click the zone
     await user.click(screen.getByTestId('header-el'));
 

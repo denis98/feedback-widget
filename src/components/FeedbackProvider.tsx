@@ -12,7 +12,9 @@ import type {
 import { FeedbackWidget } from './FeedbackWidget.js';
 import { startAutoDiscovery } from './AutoDiscovery.js';
 import { captureScreenshot, resolveTargetElement } from '../utils/screenshot.js';
+import { resolveMessages } from '../i18n.js';
 import type { FeedbackType, ClipRect, FeedbackField } from '../types.js';
+import type { DeepPartial, Messages } from '../i18n.js';
 
 interface FeedbackProviderProps extends FeedbackProviderConfig {
   children: ReactNode;
@@ -35,6 +37,9 @@ export function FeedbackProvider({
   position = 'bottom-right',
   theme = 'auto',
   locale = 'en',
+  messages,
+  showType = true,
+  showUrl = true,
   onSuccess,
   onError,
   secret,
@@ -214,6 +219,11 @@ export function FeedbackProvider({
     [retry],
   );
 
+  const resolvedMessages = useMemo<Messages>(
+    () => resolveMessages(locale ?? 'en', messages as DeepPartial<Messages> | undefined),
+    [locale, messages],
+  );
+
   const config = useMemo<ResolvedConfig>(
     () => ({
       webhookUrl,
@@ -231,6 +241,9 @@ export function FeedbackProvider({
       position: position ?? 'bottom-right',
       theme: theme ?? 'auto',
       locale: locale ?? 'en',
+      messages: resolvedMessages,
+      showType: showType ?? true,
+      showUrl: showUrl ?? true,
       ...(onSuccess !== undefined && { onSuccess }),
       ...(onError !== undefined && { onError }),
       ...(secret !== undefined && { secret }),
@@ -251,6 +264,9 @@ export function FeedbackProvider({
       position,
       theme,
       locale,
+      resolvedMessages,
+      showType,
+      showUrl,
       onSuccess,
       onError,
       secret,

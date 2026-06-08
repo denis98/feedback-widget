@@ -3,13 +3,9 @@ import { useFeedbackContext } from '../context/FeedbackContext.js';
 import { buildPayload } from '../utils/payload-builder.js';
 import { submitWithRetry } from '../utils/retry.js';
 import { ScreenshotAnnotator } from './ScreenshotAnnotator.js';
+import { format } from '../i18n.js';
+import type { Messages } from '../i18n.js';
 import type { FeedbackType, WebhookResponse } from '../types.js';
-
-const TYPE_LABELS: Record<FeedbackType, string> = {
-  bug: 'Bug Report',
-  feature: 'Feature Request',
-  general: 'General Feedback',
-};
 
 const TYPE_ICONS: Record<FeedbackType, string> = {
   bug: '🐛',
@@ -43,6 +39,7 @@ export function FeedbackModal() {
     addAnotherScreenshot,
   } = useFeedbackContext();
 
+  const m = config.messages;
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
   const [annotateIndex, setAnnotateIndex] = useState<number | null>(null);
   const annotateSrc = annotateIndex !== null ? screenshots[annotateIndex] : undefined;
@@ -57,13 +54,16 @@ export function FeedbackModal() {
     for (const f of config.fields) {
       const value = (fieldValues[f.name] ?? '').trim();
       if (f.required && !value) {
-        setSubmitState({ status: 'error', error: new Error(`Bitte „${f.label}" ausfüllen.`) });
+        setSubmitState({
+          status: 'error',
+          error: new Error(format(m.form.requiredField, { field: f.label })),
+        });
         return;
       }
       if (f.type === 'email' && value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
         setSubmitState({
           status: 'error',
-          error: new Error(`„${f.label}": bitte eine gültige E-Mail-Adresse angeben.`),
+          error: new Error(format(m.form.invalidEmail, { field: f.label })),
         });
         return;
       }
@@ -86,7 +86,7 @@ export function FeedbackModal() {
     // ticket text (not just in context.url).
     const description = draftDescription.trim();
     const fullDescription = pageUrl
-      ? `${description}${description ? '\n\n' : ''}Seite: ${pageUrl}`
+      ? `${description}${description ? '\n\n' : ''}${m.form.pageLabel}: ${pageUrl}`
       : description;
 
     const payload = buildPayload({
@@ -138,11 +138,11 @@ export function FeedbackModal() {
       <div style={styles.modal}>
         {/* Header */}
         <div style={styles.header}>
-          <h2 style={styles.heading}>Send Feedback</h2>
+          <h2 style={styles.heading}>{m.form.heading}</h2>
           <button
             onClick={handleClose}
             style={styles.closeBtn}
-            aria-label="Close feedback"
+            aria-label={m.form.close}
             type="button"
           >
             ✕
@@ -150,7 +150,12 @@ export function FeedbackModal() {
         </div>
 
         {submitState.status === 'success' ? (
-          <SuccessView result={submitState.result} onClose={handleClose} styles={styles} />
+          <SuccessView
+            result={submitState.result}
+            onClose={handleClose}
+            styles={styles}
+            messages={m}
+          />
         ) : (
           <form
             onSubmit={(e) => {
@@ -159,24 +164,26 @@ export function FeedbackModal() {
             noValidate
           >
             {/* Type selection */}
-            <div style={styles.typeRow}>
-              {config.types.map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => setDraftType(t)}
-                  style={{
-                    ...styles.typeBtn,
-                    ...(draftType === t ? styles.typeBtnActive : {}),
-                  }}
-                >
-                  {TYPE_ICONS[t]} {TYPE_LABELS[t]}
-                </button>
-              ))}
-            </div>
+            {config.showType && (
+              <div style={styles.typeRow}>
+                {config.types.map((t) => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setDraftType(t)}
+                    style={{
+                      ...styles.typeBtn,
+                      ...(draftType === t ? styles.typeBtnActive : {}),
+                    }}
+                  >
+                    {TYPE_ICONS[t]} {m.typesLong[t]}
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Affected page URL */}
-            {pageUrl && (
+            {config.showUrl && pageUrl && (
               <div style={styles.urlBadge} title={pageUrl}>
                 🔗 <span style={styles.urlText}>{pageUrl}</span>
               </div>
@@ -186,13 +193,11 @@ export function FeedbackModal() {
             {config.screenshot && (
               <div style={styles.galleryWrap}>
                 <div style={styles.galleryLabel}>
-                  Screenshots {screenshots.length > 0 && `(${screenshots.length})`} – anklicken zum
-                  Vergrößern & Markieren
+                  {m.form.screenshots}
+                  {screenshots.length > 0 && ` (${screenshots.length})`} – {m.form.screenshotsHint}
                 </div>
                 {screenshots.length === 0 ? (
-                  <div style={styles.galleryEmpty}>
-                    Noch kein Screenshot. Über „Weiteres Bild" einen Bereich aufnehmen.
-                  </div>
+                  <div style={styles.galleryEmpty}>{m.form.noScreenshot}</div>
                 ) : (
                   <div style={styles.galleryGrid}>
                     {screenshots.map((shot, i) => (
@@ -202,14 +207,14 @@ export function FeedbackModal() {
                           alt={`Screenshot ${i + 1}`}
                           style={styles.thumb}
                           onClick={() => setAnnotateIndex(i)}
-                          title="Vergrößern & markieren"
+                          title={m.form.enlargeTitle}
                         />
                         <button
                           type="button"
                           onClick={() => removeScreenshotAt(i)}
                           style={styles.thumbRemove}
-                          aria-label={`Screenshot ${i + 1} entfernen`}
-                          title="Entfernen"
+                          aria-label={format(m.form.removeScreenshot, { index: i + 1 })}
+                          title={m.form.remove}
                         >
                           ✕
                         </button>
@@ -230,7 +235,7 @@ export function FeedbackModal() {
             {/* Title */}
             <div style={styles.field}>
               <label style={styles.label} htmlFor="fw-title">
-                Title *
+                {m.form.title} *
               </label>
               <input
                 id="fw-title"
@@ -238,7 +243,7 @@ export function FeedbackModal() {
                 type="text"
                 value={draftTitle}
                 onChange={(e) => setDraftTitle(e.target.value)}
-                placeholder="Brief summary"
+                placeholder={m.form.titlePlaceholder}
                 required
                 maxLength={200}
               />
@@ -247,14 +252,14 @@ export function FeedbackModal() {
             {/* Description */}
             <div style={styles.field}>
               <label style={styles.label} htmlFor="fw-description">
-                Description
+                {m.form.description}
               </label>
               <textarea
                 id="fw-description"
                 style={{ ...styles.input, ...styles.textarea }}
                 value={draftDescription}
                 onChange={(e) => setDraftDescription(e.target.value)}
-                placeholder="More details (optional)"
+                placeholder={m.form.descriptionPlaceholder}
                 rows={4}
               />
             </div>
@@ -265,7 +270,8 @@ export function FeedbackModal() {
                 {config.fields.map((f) => (
                   <div key={f.name} style={{ ...styles.field, flex: 1, minWidth: '160px' }}>
                     <label style={styles.label} htmlFor={`fw-field-${f.name}`}>
-                      {f.label} {!f.required && <span style={styles.optional}>(optional)</span>}
+                      {f.label}{' '}
+                      {!f.required && <span style={styles.optional}>{m.form.optional}</span>}
                     </label>
                     {f.type === 'textarea' ? (
                       <textarea
@@ -311,7 +317,7 @@ export function FeedbackModal() {
             {/* Error */}
             {submitState.status === 'error' && (
               <p style={styles.errorText} role="alert">
-                ⚠️ {submitState.error.message} – your feedback is preserved.
+                {format(m.form.submitError, { message: submitState.error.message })}
               </p>
             )}
 
@@ -324,7 +330,7 @@ export function FeedbackModal() {
                   style={styles.secondaryBtn}
                   disabled={submitState.status === 'submitting'}
                 >
-                  ＋ Weiteres Bild
+                  {m.form.addScreenshot}
                 </button>
               )}
               <button
@@ -335,7 +341,7 @@ export function FeedbackModal() {
                 }}
                 disabled={submitState.status === 'submitting' || !draftTitle.trim()}
               >
-                {submitState.status === 'submitting' ? 'Sending…' : 'Absenden'}
+                {submitState.status === 'submitting' ? m.form.submitting : m.form.submit}
               </button>
             </div>
           </form>
@@ -346,6 +352,7 @@ export function FeedbackModal() {
         <ScreenshotAnnotator
           src={annotateSrc}
           isDark={isDark}
+          messages={m}
           onSave={(dataUrl) => {
             updateScreenshotAt(annotateIndex, dataUrl);
             setAnnotateIndex(null);
@@ -361,16 +368,18 @@ function SuccessView({
   result,
   onClose,
   styles,
+  messages,
 }: {
   result: WebhookResponse;
   onClose: () => void;
   styles: ReturnType<typeof getStyles>;
+  messages: Messages;
 }) {
   return (
     <div style={styles.successView}>
       <div style={styles.successIcon}>✓</div>
-      <h3 style={styles.successHeading}>Thank you!</h3>
-      <p style={styles.successText}>{result.message ?? 'Your feedback has been received.'}</p>
+      <h3 style={styles.successHeading}>{messages.success.heading}</h3>
+      <p style={styles.successText}>{result.message ?? messages.success.message}</p>
       {result.ticketId && (
         <p style={styles.ticketInfo}>
           {result.ticketUrl ? (
@@ -388,7 +397,7 @@ function SuccessView({
         </p>
       )}
       <button onClick={onClose} style={styles.submitBtn} type="button">
-        Close
+        {messages.success.close}
       </button>
     </div>
   );

@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useFeedbackContext } from '../context/FeedbackContext.js';
 import { FeedbackModal } from './FeedbackModal.js';
 import { RegionSelector } from './RegionSelector.js';
-import type { TriggerRenderProps } from '../types.js';
+import { format } from '../i18n.js';
+import type { Messages } from '../i18n.js';
+import type { FeedbackType, TriggerRenderProps } from '../types.js';
 
 interface FeedbackWidgetProps {
   trigger?: ((props: TriggerRenderProps) => ReactNode) | null;
@@ -16,9 +18,25 @@ const POSITION_STYLES: Record<string, React.CSSProperties> = {
   'top-left': { top: '24px', left: '24px' },
 };
 
+const TYPE_ICONS: Record<FeedbackType, string> = {
+  bug: '🐛',
+  feature: '💡',
+  general: '💬',
+};
+
 export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
-  const { phase, openWidget, closeWidget, confirmSelection, skipSelection, config, selectedZone } =
-    useFeedbackContext();
+  const {
+    phase,
+    openWidget,
+    closeWidget,
+    confirmSelection,
+    skipSelection,
+    config,
+    selectedZone,
+    setDraftType,
+  } = useFeedbackContext();
+
+  const m = config.messages;
 
   const isDark =
     config.theme === 'dark' ||
@@ -28,44 +46,25 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
 
   const positionStyle = POSITION_STYLES[config.position] ?? POSITION_STYLES['bottom-right'];
 
+  // Open the widget pre-selected to a feedback type.
+  const openWithType = (t: FeedbackType) => {
+    setDraftType(t);
+    openWidget();
+  };
+
   // ── Floating trigger button (idle) ─────────────────────────────────────
   const triggerElement: ReactNode =
     phase !== 'idle' ? null : trigger === null ? null : trigger !== undefined ? ( // hide while active
       trigger({ open: openWidget, isOpen: false })
     ) : (
-      <button
-        type="button"
-        onClick={openWidget}
-        aria-label="Open feedback"
-        data-feedback-widget
-        style={{
-          position: 'fixed',
-          ...positionStyle,
-          zIndex: 9998,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '10px 16px',
-          borderRadius: '999px',
-          border: 'none',
-          backgroundColor: isDark ? '#1f2937' : '#2563eb',
-          color: '#ffffff',
-          fontWeight: 600,
-          fontSize: '14px',
-          cursor: 'pointer',
-          boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          transition: 'transform 0.15s ease',
-        }}
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-        }}
-      >
-        💬 Feedback
-      </button>
+      <DefaultTrigger
+        isDark={isDark}
+        positionStyle={positionStyle ?? POSITION_STYLES['bottom-right']!}
+        types={config.types}
+        messages={m}
+        onOpen={openWidget}
+        onPick={openWithType}
+      />
     );
 
   // ── Selection bar (selecting phase) ────────────────────────────────────
@@ -94,37 +93,35 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
       >
         {selectedZone ? (
           <>
-            <span>
-              📍 <strong>{selectedZone.label}</strong> ausgewählt
-            </span>
+            <span>{format(m.selection.selected, { label: selectedZone.label })}</span>
             <button
               type="button"
               onClick={() => confirmSelection()}
               style={selectionActionBtn('#22c55e')}
             >
-              Weiter →
+              {m.selection.continue}
             </button>
             <button
               type="button"
               onClick={() => confirmSelection(null)}
               style={selectionActionBtn('#64748b')}
             >
-              Auswahl entfernen
+              {m.selection.clearSelection}
             </button>
           </>
         ) : (
           <>
-            <span>🎯 Bereich aufziehen oder Element anklicken –</span>
+            <span>{m.selection.prompt}</span>
             <button
               type="button"
               onClick={() => confirmSelection(null)}
               style={selectionActionBtn('#2563eb')}
             >
-              {config.screenshot ? '🖥 Ganzer Bildschirm' : 'Überspringen'}
+              {config.screenshot ? m.selection.fullScreen : m.selection.skip}
             </button>
             {config.screenshot && (
               <button type="button" onClick={skipSelection} style={selectionActionBtn('#64748b')}>
-                Ohne Screenshot
+                {m.selection.withoutScreenshot}
               </button>
             )}
           </>
@@ -132,7 +129,7 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
         <button
           type="button"
           onClick={closeWidget}
-          aria-label="Abbrechen"
+          aria-label={m.selection.cancel}
           style={{
             background: 'none',
             border: 'none',
@@ -172,7 +169,7 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
           whiteSpace: 'nowrap',
         }}
       >
-        📸 Screenshot wird erstellt…
+        {m.capturing}
       </div>
     ) : null;
 
@@ -187,6 +184,123 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
       {phase === 'form' && <FeedbackModal />}
     </>
   );
+}
+
+// Floating trigger that expands on hover into one button per feedback type.
+function DefaultTrigger({
+  isDark,
+  positionStyle,
+  types,
+  messages,
+  onOpen,
+  onPick,
+}: {
+  isDark: boolean;
+  positionStyle: React.CSSProperties;
+  types: FeedbackType[];
+  messages: Messages;
+  onOpen: () => void;
+  onPick: (t: FeedbackType) => void;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // The outer wrapper stays mounted across the collapsed↔expanded swap so its
+  // onMouseLeave keeps firing while the inner content (pill ↔ type container)
+  // is replaced.
+  return (
+    <div
+      data-feedback-widget
+      onMouseEnter={() => setExpanded(true)}
+      onMouseLeave={() => setExpanded(false)}
+      style={{
+        position: 'fixed',
+        ...positionStyle,
+        zIndex: 9998,
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}
+    >
+      {expanded ? (
+        // Container that replaces the hovered Feedback button: the three type
+        // buttons grouped side by side as a segmented control.
+        <div role="group" aria-label={messages.trigger.chooseType} style={typeContainer(isDark)}>
+          {types.map((t, i) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => onPick(t)}
+              aria-label={format(messages.trigger.typeAria, { type: messages.types[t] })}
+              title={messages.types[t]}
+              style={typeSegment(isDark, i > 0)}
+            >
+              <span aria-hidden="true" style={{ fontSize: '20px', lineHeight: 1 }}>
+                {TYPE_ICONS[t]}
+              </span>
+              <span>{messages.types[t]}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onOpen}
+          onFocus={() => setExpanded(true)}
+          aria-label={messages.trigger.openAria}
+          style={triggerPill(isDark)}
+        >
+          💬 {messages.trigger.open}
+        </button>
+      )}
+    </div>
+  );
+}
+
+function triggerPill(isDark: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '10px 16px',
+    borderRadius: '999px',
+    border: 'none',
+    backgroundColor: isDark ? '#1f2937' : '#2563eb',
+    color: '#ffffff',
+    fontWeight: 600,
+    fontSize: '14px',
+    cursor: 'pointer',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+    whiteSpace: 'nowrap',
+  };
+}
+
+function typeContainer(isDark: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    alignItems: 'stretch',
+    borderRadius: '16px',
+    overflow: 'hidden',
+    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+    boxShadow: '0 4px 16px rgba(0,0,0,0.25)',
+  };
+}
+
+function typeSegment(isDark: boolean, withDivider: boolean): React.CSSProperties {
+  return {
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '6px',
+    padding: '12px 18px',
+    minWidth: '76px',
+    border: 'none',
+    borderLeft: withDivider ? `1px solid ${isDark ? '#374151' : '#e5e7eb'}` : 'none',
+    backgroundColor: 'transparent',
+    color: isDark ? '#f9fafb' : '#1e293b',
+    fontWeight: 600,
+    fontSize: '13px',
+    cursor: 'pointer',
+    whiteSpace: 'nowrap',
+  };
 }
 
 function selectionActionBtn(bg: string): React.CSSProperties {

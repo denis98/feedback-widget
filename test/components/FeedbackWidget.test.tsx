@@ -12,11 +12,23 @@ function renderWidget(props: Partial<Parameters<typeof FeedbackProvider>[0]> = {
   );
 }
 
+/**
+ * Hovers the floating trigger (which replaces it with the type container) and
+ * picks a feedback type, entering the selection phase.
+ */
+async function openTrigger(
+  user: ReturnType<typeof userEvent.setup>,
+  type: RegExp = /feedback: bug/i,
+) {
+  await user.hover(screen.getByRole('button', { name: /open feedback/i }));
+  await user.click(await screen.findByRole('button', { name: type }));
+}
+
 /** Opens widget and navigates through selection to the form */
 async function openToForm(user: ReturnType<typeof userEvent.setup>) {
-  await user.click(screen.getByRole('button', { name: /open feedback/i }));
+  await openTrigger(user);
   // Selection bar appears → skip selection to go directly to form
-  await user.click(screen.getByRole('button', { name: /überspringen/i }));
+  await user.click(screen.getByRole('button', { name: /skip/i }));
 }
 
 describe('FeedbackWidget', () => {
@@ -25,15 +37,40 @@ describe('FeedbackWidget', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  test('clicking the button enters selection phase (no modal yet)', async () => {
+  test('picking a type from the hover container enters selection phase (no modal yet)', async () => {
     const user = userEvent.setup();
     renderWidget();
 
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
+    await openTrigger(user);
 
     // Selection bar visible, not yet the form
-    expect(screen.getByText(/Bereich aufziehen/i)).toBeInTheDocument();
+    expect(screen.getByText(/select an area/i)).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  test('hovering replaces the button with one container button per type', async () => {
+    const user = userEvent.setup();
+    renderWidget();
+
+    await user.hover(screen.getByRole('button', { name: /open feedback/i }));
+
+    // Pill is replaced by the type container.
+    expect(screen.queryByRole('button', { name: /open feedback/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /choose feedback type/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /feedback: bug/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /feedback: feature/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /feedback: general/i })).toBeInTheDocument();
+  });
+
+  test('picking a type preselects it in the form', async () => {
+    const user = userEvent.setup();
+    renderWidget({ selectionMode: 'none' });
+
+    await openTrigger(user, /feedback: feature/i);
+
+    // Form opens with the Feature type active (its modal button is highlighted).
+    const featureBtn = screen.getByRole('button', { name: /feature request/i });
+    expect(featureBtn).toHaveStyle({ color: 'rgb(29, 78, 216)' });
   });
 
   test('skipping selection opens the form modal', async () => {
@@ -49,32 +86,32 @@ describe('FeedbackWidget', () => {
     const user = userEvent.setup();
     renderWidget({ screenshot: true });
 
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
+    await openTrigger(user);
     // With screenshot on, the skip action is labelled "Ganzer Bildschirm".
-    await user.click(screen.getByRole('button', { name: /ganzer bildschirm/i }));
+    await user.click(screen.getByRole('button', { name: /whole screen/i }));
 
     // Capture runs in confirmSelection → falls back to modern-screenshot (mocked) in jsdom.
     const img = await waitFor(() => screen.getByAltText(/screenshot 1/i));
     expect(img).toHaveAttribute('src', expect.stringContaining('data:image/png;base64,'));
 
     // The form offers adding more images.
-    expect(screen.getByRole('button', { name: /weiteres bild/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add image/i })).toBeInTheDocument();
 
     // Removing the screenshot empties the gallery.
-    await user.click(screen.getByRole('button', { name: /screenshot 1 entfernen/i }));
+    await user.click(screen.getByRole('button', { name: /remove screenshot 1/i }));
     expect(screen.queryByAltText(/screenshot 1/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/noch kein screenshot/i)).toBeInTheDocument();
+    expect(screen.getByText(/no screenshot yet/i)).toBeInTheDocument();
   });
 
   test('"Ohne Screenshot" opens the form without capturing', async () => {
     const user = userEvent.setup();
     renderWidget({ screenshot: true });
 
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
-    await user.click(screen.getByRole('button', { name: /ohne screenshot/i }));
+    await openTrigger(user);
+    await user.click(screen.getByRole('button', { name: /without screenshot/i }));
 
     expect(screen.getByRole('dialog')).toBeInTheDocument();
-    expect(screen.getByText(/noch kein screenshot/i)).toBeInTheDocument();
+    expect(screen.getByText(/no screenshot yet/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/screenshot 1/i)).not.toBeInTheDocument();
   });
 
@@ -100,15 +137,27 @@ describe('FeedbackWidget', () => {
     expect(screen.queryByText(/General Feedback/i)).not.toBeInTheDocument();
   });
 
+  test('showType=false hides the type selector in the form', async () => {
+    const user = userEvent.setup();
+    renderWidget({ selectionMode: 'none', showType: false });
+
+    await openTrigger(user, /feedback: feature/i);
+
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    // No type buttons inside the modal (type was chosen at the trigger).
+    expect(screen.queryByText(/Bug Report/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Feature Request/i)).not.toBeInTheDocument();
+  });
+
   test('closes via cancel button in selection phase', async () => {
     const user = userEvent.setup();
     renderWidget();
 
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
-    await user.click(screen.getByRole('button', { name: /abbrechen/i }));
+    await openTrigger(user);
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.queryByText(/Bereich aufziehen/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/select an area/i)).not.toBeInTheDocument();
     // Floating button is back
     expect(screen.getByRole('button', { name: /open feedback/i })).toBeInTheDocument();
   });
@@ -130,7 +179,7 @@ describe('FeedbackWidget', () => {
 
     await openToForm(user);
 
-    expect(screen.getByRole('button', { name: /absenden/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /submit/i })).toBeDisabled();
   });
 
   test('submit button enabled after entering title', async () => {
@@ -140,17 +189,17 @@ describe('FeedbackWidget', () => {
     await openToForm(user);
     await user.type(screen.getByLabelText(/title/i), 'Test title');
 
-    expect(screen.getByRole('button', { name: /absenden/i })).not.toBeDisabled();
+    expect(screen.getByRole('button', { name: /submit/i })).not.toBeDisabled();
   });
 
   test('selectionMode=none skips directly to form', async () => {
     const user = userEvent.setup();
     renderWidget({ selectionMode: 'none' });
 
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
+    await openTrigger(user);
 
     // No selection bar, dialog appears immediately
-    expect(screen.queryByText(/Bereich aufziehen/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/select an area/i)).not.toBeInTheDocument();
     expect(screen.getByRole('dialog')).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import type { DeepPartial, Messages } from './i18n.js';
 
 export type FeedbackType = 'bug' | 'feature' | 'general';
 
@@ -128,7 +129,28 @@ export interface FeedbackProviderConfig {
   fields?: FeedbackField[];
   position?: Position;
   theme?: Theme;
+  /**
+   * Selects the built-in message pack: `'en'` (default) or `'de'`. Unknown
+   * locales fall back to English. Combine with `messages` to add languages.
+   */
   locale?: string;
+  /**
+   * Override individual UI strings (deep-merged onto the `locale` pack). Pass a
+   * full {@link Messages} object under a new key — or just the strings you want
+   * to change — to localize or rebrand the widget.
+   */
+  messages?: DeepPartial<Messages>;
+  /**
+   * Show the feedback-type selector (Bug/Feature/General) inside the form.
+   * Redundant when the type is already chosen via the floating trigger.
+   * Default: true.
+   */
+  showType?: boolean;
+  /**
+   * Show the affected page URL inside the form. The URL is always transmitted
+   * regardless (in `context.url` and appended to the description). Default: true.
+   */
+  showUrl?: boolean;
   onSuccess?: (result: WebhookResponse) => void;
   onError?: (error: Error) => void;
   secret?: string;
@@ -157,6 +179,10 @@ export interface ResolvedConfig {
   position: Position;
   theme: Theme;
   locale: string;
+  /** Resolved message dictionary (built-in pack merged with overrides). */
+  messages: Messages;
+  showType: boolean;
+  showUrl: boolean;
   onSuccess?: ((result: WebhookResponse) => void) | undefined;
   onError?: ((error: Error) => void) | undefined;
   secret?: string | undefined;

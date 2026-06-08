@@ -109,6 +109,48 @@ Screenshots are delivered as base64 PNG data URLs (`screenshots: string[]`, plus
 
 `mapTo` fields go into `payload.user`; everything else into `payload.custom`.
 
+## Localization
+
+Two message packs ship built in: `en` (default) and `de`. Pick one with `locale`:
+
+```tsx
+<FeedbackProvider webhookUrl="/api/feedback" locale="de">
+  {/* … */}
+</FeedbackProvider>
+```
+
+Override individual strings — or add a whole new language — with `messages`
+(deep-merged onto the chosen `locale` pack, so you only specify what changes):
+
+```tsx
+<FeedbackProvider
+  webhookUrl="/api/feedback"
+  locale="de"
+  messages={{
+    form: { submit: 'Abschicken', heading: 'Feedback' },
+    success: { heading: 'Vielen Dank!' },
+  }}
+>
+  {/* … */}
+</FeedbackProvider>
+```
+
+Interpolated strings use `{token}` placeholders (e.g. `selection.region:
+"Area {width}×{height}"`). The full `Messages` type, the built-in packs
+(`builtinMessages`) and the `resolveMessages` / `format` helpers are exported
+for building a complete custom language:
+
+```ts
+import { builtinMessages, type Messages, type DeepPartial } from '@denis98/feedback-widget';
+
+const fr: DeepPartial<Messages> = { trigger: { open: 'Retour' }, form: { submit: 'Envoyer' } };
+```
+
+Two display-only flags let you hide elements that are redundant in your setup
+(the data is still transmitted): `showType={false}` (type chosen via the hover
+trigger) and `showUrl={false}` (page URL stays in `context.url` and the
+description).
+
 ## Webhook payload
 
 ```ts

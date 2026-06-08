@@ -15,6 +15,10 @@ export { captureScreenshot, resolveTargetElement } from './utils/screenshot.js';
 export type { ScreenshotOptions } from './utils/screenshot.js';
 export { startAutoDiscovery } from './components/AutoDiscovery.js';
 
+// i18n
+export { builtinMessages, resolveMessages, format } from './i18n.js';
+export type { Messages, DeepPartial } from './i18n.js';
+
 // Schema
 export {
   webhookPayloadSchema,

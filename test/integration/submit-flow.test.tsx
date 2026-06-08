@@ -32,14 +32,16 @@ afterAll(() => server.close());
 
 async function fillAndSubmit(title: string, description?: string) {
   const user = userEvent.setup();
-  await user.click(screen.getByRole('button', { name: /open feedback/i }));
+  // Hover the trigger (replaced by the type container) and pick a type.
+  await user.hover(screen.getByRole('button', { name: /open feedback/i }));
+  await user.click(await screen.findByRole('button', { name: /feedback: bug/i }));
   // Skip zone selection to go directly to the form
-  await user.click(screen.getByRole('button', { name: /überspringen/i }));
+  await user.click(screen.getByRole('button', { name: /skip/i }));
   await user.type(screen.getByLabelText(/title/i), title);
   if (description) {
     await user.type(screen.getByLabelText(/description/i), description);
   }
-  await user.click(screen.getByRole('button', { name: /absenden/i }));
+  await user.click(screen.getByRole('button', { name: /submit/i }));
 }
 
 describe('submit flow (integration)', () => {
@@ -60,7 +62,7 @@ describe('submit flow (integration)', () => {
     expect(capturedPayloads[0]?.title).toBe('My feedback title');
     // The affected page URL is appended to the description and also in context.url.
     expect(capturedPayloads[0]?.description).toBe(
-      `Some description\n\nSeite: ${window.location.href}`,
+      `Some description\n\nPage: ${window.location.href}`,
     );
     expect(capturedPayloads[0]?.context.url).toBe(window.location.href);
     expect(capturedPayloads[0]?.projectId).toBe('test-project');
@@ -90,11 +92,12 @@ describe('submit flow (integration)', () => {
       </FeedbackProvider>,
     );
 
-    await user.click(screen.getByRole('button', { name: /open feedback/i }));
+    await user.hover(screen.getByRole('button', { name: /open feedback/i }));
+    await user.click(await screen.findByRole('button', { name: /feedback: bug/i }));
     // In zone mode: clicking the zone element triggers confirmSelection → opens form
     await user.click(screen.getByTestId('nav-el'));
     await user.type(screen.getByLabelText(/title/i), 'Nav issue');
-    await user.click(screen.getByRole('button', { name: /absenden/i }));
+    await user.click(screen.getByRole('button', { name: /submit/i }));
 
     await waitFor(() => expect(capturedPayloads).toHaveLength(1));
     expect(capturedPayloads[0]?.zone?.id).toBe('nav');

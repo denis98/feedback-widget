@@ -1,6 +1,7 @@
 import React, { useEffect, useCallback, useRef, useState } from 'react';
 import { useFeedbackContext } from '../context/FeedbackContext.js';
 import { getCssPath } from '../utils/css-selector.js';
+import { format } from '../i18n.js';
 
 /**
  * Selection during the 'selecting' phase. Supports two gestures:
@@ -124,7 +125,10 @@ export function RegionSelector() {
         confirmSelection(
           {
             id: 'region',
-            label: `Bereich ${Math.round(w)}×${Math.round(h)}`,
+            label: format(config.messages.selection.region, {
+              width: Math.round(w),
+              height: Math.round(h),
+            }),
             meta: {
               region: {
                 x: Math.round(x),
@@ -182,7 +186,13 @@ export function RegionSelector() {
       document.removeEventListener('pointermove', onPointerMove, true);
       document.removeEventListener('pointerup', onPointerUp, true);
     };
-  }, [isActive, config.selectionMode, getZoneForElement, confirmSelection]);
+  }, [
+    isActive,
+    config.selectionMode,
+    config.messages.selection.region,
+    getZoneForElement,
+    confirmSelection,
+  ]);
 
   // Swallow page clicks while selecting/capturing so the user's click doesn't
   // also activate the element underneath (navigate, open menus, submit forms…).
