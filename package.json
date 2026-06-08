@@ -1,6 +1,6 @@
 {
   "name": "@denis98/feedback-widget",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Lightweight, open-source feedback widget for React: bug/feature/general feedback with pixel-perfect region screenshots, in-browser annotation, and webhook-based ticket integration.",
   "license": "MIT",
   "author": "Denis Graipel",
