@@ -137,6 +137,72 @@ export function computeCropRect(
   return { sx, sy, sw, sh };
 }
 
+// ── Scroll offsets (modern-screenshot clones the DOM and loses them) ──────────
+
+const SCROLL_ATTR = 'data-fw-scroll';
+
+/**
+ * Tags every scrolled element (and body, for the document scroll) with its
+ * offsets so the clone created by modern-screenshot can reproduce them.
+ * Returns a cleanup function that removes the tags again.
+ */
+export function markScrollOffsets(): () => void {
+  const marked: Element[] = [];
+  const mark = (el: Element, x: number, y: number) => {
+    if (!x && !y) return;
+    el.setAttribute(SCROLL_ATTR, `${x},${y}`);
+    marked.push(el);
+  };
+  document.querySelectorAll('*').forEach((el) => {
+    if (el !== document.documentElement && el !== document.body) {
+      mark(el, el.scrollLeft, el.scrollTop);
+    }
+  });
+  // Document scroll: the root clone is <body>, so shift its content.
+  mark(
+    document.body,
+    window.scrollX || document.body.scrollLeft,
+    window.scrollY || document.body.scrollTop,
+  );
+  return () => marked.forEach((el) => el.removeAttribute(SCROLL_ATTR));
+}
+
+/**
+ * Shifts the content of a cloned, tagged scroll container by its scroll offset.
+ * In-flow children get `position: relative` + left/top (works for text and
+ * inline children too), positioned children a translate. `fixed` and `sticky`
+ * children are left alone: they do not move with the scroll content.
+ */
+export function applyScrollOffset(clone: Node): void {
+  if (!(clone instanceof HTMLElement)) return;
+  const attr = clone.getAttribute(SCROLL_ATTR);
+  if (!attr) return;
+  clone.removeAttribute(SCROLL_ATTR);
+  const [x = 0, y = 0] = attr.split(',').map(Number);
+  clone.style.overflow = 'hidden';
+  Array.from(clone.childNodes).forEach((child) => {
+    let el: HTMLElement;
+    if (child.nodeType === Node.TEXT_NODE) {
+      if (!child.textContent?.trim()) return;
+      el = document.createElement('span');
+      clone.replaceChild(el, child);
+      el.appendChild(child);
+    } else if (child instanceof HTMLElement) {
+      el = child;
+    } else return;
+    const pos = el.style.position;
+    if (pos === 'fixed' || pos === 'sticky') return;
+    if (!pos || pos === 'static') {
+      el.style.position = 'relative';
+      el.style.left = `${-x}px`;
+      el.style.top = `${-y}px`;
+    } else {
+      const t = el.style.transform;
+      el.style.transform = `translate(${-x}px, ${-y}px)${t && t !== 'none' ? ` ${t}` : ''}`;
+    }
+  });
+}
+
 // ── Method 1: modern-screenshot (fallback) ────────────────────────────────────
 
 async function captureViaModernScreenshot(
@@ -145,19 +211,22 @@ async function captureViaModernScreenshot(
 ): Promise<string> {
   const hidden = hideWidgets();
   const restoreCur = cursor ? null : hideCursor();
+  const unmark = markScrollOffsets();
   await waitForRepaint();
 
   try {
     const scale = window.devicePixelRatio ?? 1;
     if (targetEl) {
-      return await domToPng(targetEl, { scale });
+      return await domToPng(targetEl, { scale, onCloneEachNode: applyScrollOffset });
     }
     return await domToPng(document.body, {
       scale,
+      onCloneEachNode: applyScrollOffset,
       width: window.innerWidth,
       height: window.innerHeight,
     });
   } finally {
+    unmark();
     restoreCur?.();
     restoreWidgets(hidden);
   }
