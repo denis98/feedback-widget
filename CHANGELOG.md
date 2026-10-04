@@ -5,6 +5,11 @@ to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Fixed
+- DOM-render screenshot fallback (Safari/Firefox, or Screen Capture denied) now
+  keeps the scroll offsets of nested scroll containers and the document, so the
+  image matches what is on screen. `fixed`/`sticky` children are not shifted.
+
 ### Added
 - Pixel-perfect screenshots via the Screen Capture API, cropped to the
   selected element or a freely drawn region (`computeCropRect`).

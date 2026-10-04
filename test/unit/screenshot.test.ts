@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import { computeCropRect } from '../../src/utils/screenshot.js';
+import {
+  applyScrollOffset,
+  computeCropRect,
+  markScrollOffsets,
+} from '../../src/utils/screenshot.js';
 
 describe('computeCropRect', () => {
   it('maps a region 1:1 when frame matches the viewport (DPR 1)', () => {
@@ -53,5 +57,43 @@ describe('computeCropRect', () => {
     });
     expect(crop.sw).toBeGreaterThanOrEqual(1);
     expect(crop.sh).toBeGreaterThanOrEqual(1);
+  });
+});
+
+describe('scroll offsets in the DOM fallback', () => {
+  it('reproduces the scroll position of a nested container in the clone', () => {
+    document.body.innerHTML =
+      '<div id="sc" style="overflow:auto"><p id="a">x</p><div id="abs" style="position:absolute"></div><div id="fx" style="position:fixed"></div>text</div>';
+    const sc = document.getElementById('sc')!;
+    Object.defineProperty(sc, 'scrollTop', { value: 120, configurable: true });
+    Object.defineProperty(sc, 'scrollLeft', { value: 5, configurable: true });
+
+    const unmark = markScrollOffsets();
+    expect(sc.getAttribute('data-fw-scroll')).toBe('5,120');
+    const clone = sc.cloneNode(true) as HTMLElement;
+    unmark();
+    expect(sc.hasAttribute('data-fw-scroll')).toBe(false);
+
+    // modern-screenshot inlines computed styles before the hook runs.
+    (clone.querySelector('#abs') as HTMLElement).style.position = 'absolute';
+    (clone.querySelector('#fx') as HTMLElement).style.position = 'fixed';
+    (clone.querySelector('#a') as HTMLElement).style.position = 'static';
+    applyScrollOffset(clone);
+
+    expect(clone.style.overflow).toBe('hidden');
+    const a = clone.querySelector('#a') as HTMLElement;
+    expect([a.style.position, a.style.top, a.style.left]).toEqual(['relative', '-120px', '-5px']);
+    // Must beat the inset-block/inset-inline longhands the clone also carries.
+    expect(a.style.getPropertyPriority('top')).toBe('important');
+    expect((clone.querySelector('#abs') as HTMLElement).style.transform).toBe(
+      'translate(-5px, -120px)',
+    );
+    const fx = clone.querySelector('#fx') as HTMLElement;
+    expect(fx.style.transform).toBe('');
+    // Stays above the now positioned, shifted siblings.
+    expect(fx.style.zIndex).toBe('1');
+    // Loose text is wrapped so it shifts too.
+    expect(clone.lastChild?.nodeName).toBe('SPAN');
+    expect((clone.lastChild as HTMLElement).style.top).toBe('-120px');
   });
 });
