@@ -191,11 +191,17 @@ export function applyScrollOffset(clone: Node): void {
       el = child;
     } else return;
     const pos = el.style.position;
-    if (pos === 'fixed' || pos === 'sticky') return;
+    if (pos === 'fixed' || pos === 'sticky') {
+      // The shifted siblings become positioned and would paint over it.
+      if (!el.style.zIndex || el.style.zIndex === 'auto') el.style.zIndex = '1';
+      return;
+    }
     if (!pos || pos === 'static') {
+      // important: the clone carries computed inset-block/inset-inline
+      // longhands after top/left, which would otherwise reset the offset.
       el.style.position = 'relative';
-      el.style.left = `${-x}px`;
-      el.style.top = `${-y}px`;
+      el.style.setProperty('left', `${-x}px`, 'important');
+      el.style.setProperty('top', `${-y}px`, 'important');
     } else {
       const t = el.style.transform;
       el.style.transform = `translate(${-x}px, ${-y}px)${t && t !== 'none' ? ` ${t}` : ''}`;

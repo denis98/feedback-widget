@@ -83,10 +83,15 @@ describe('scroll offsets in the DOM fallback', () => {
     expect(clone.style.overflow).toBe('hidden');
     const a = clone.querySelector('#a') as HTMLElement;
     expect([a.style.position, a.style.top, a.style.left]).toEqual(['relative', '-120px', '-5px']);
+    // Must beat the inset-block/inset-inline longhands the clone also carries.
+    expect(a.style.getPropertyPriority('top')).toBe('important');
     expect((clone.querySelector('#abs') as HTMLElement).style.transform).toBe(
       'translate(-5px, -120px)',
     );
-    expect((clone.querySelector('#fx') as HTMLElement).style.transform).toBe('');
+    const fx = clone.querySelector('#fx') as HTMLElement;
+    expect(fx.style.transform).toBe('');
+    // Stays above the now positioned, shifted siblings.
+    expect(fx.style.zIndex).toBe('1');
     // Loose text is wrapped so it shifts too.
     expect(clone.lastChild?.nodeName).toBe('SPAN');
     expect((clone.lastChild as HTMLElement).style.top).toBe('-120px');
