@@ -14,21 +14,15 @@ export function getCssPath(element: Element): string {
   return parts.join(' > ');
 }
 
-function cssEscape(value: string): string {
-  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') return CSS.escape(value);
-  // Minimal fallback: escape characters that are invalid in identifiers.
-  return value.replace(/[^a-zA-Z0-9_-]/g, (ch) => `\\${ch}`);
-}
-
 function getElementSelector(el: Element): string {
   const tag = el.tagName.toLowerCase();
-  const id = el.id ? `#${cssEscape(el.id)}` : '';
+  const id = el.id ? `#${CSS.escape(el.id)}` : '';
   if (id) return `${tag}${id}`;
 
   const classes = Array.from(el.classList)
     .filter((c) => !c.startsWith('feedback-widget-'))
     .slice(0, 3)
-    .map((c) => `.${cssEscape(c)}`)
+    .map((c) => `.${CSS.escape(c)}`)
     .join('');
 
   const parent = el.parentElement;

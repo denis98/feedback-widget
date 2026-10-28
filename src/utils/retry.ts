@@ -1,5 +1,4 @@
 import type { RetryConfig, WebhookPayload, WebhookResponse } from '../types.js';
-import { webhookResponseSchema } from '../schema.js';
 
 export type FetchFn = (url: string, init: RequestInit) => Promise<Response>;
 
@@ -21,10 +20,6 @@ const DEFAULT_RETRY_CONFIG: RetryConfig = {
   backoffFactor: 2,
 };
 
-function resolveRetryConfig(partial?: Partial<RetryConfig>): RetryConfig {
-  return { ...DEFAULT_RETRY_CONFIG, ...partial };
-}
-
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -45,7 +40,7 @@ export async function submitWithRetry(
   fetchFn: FetchFn = fetch,
   secret?: string,
 ): Promise<WebhookResponse> {
-  const config = resolveRetryConfig(retryConfig);
+  const config = { ...DEFAULT_RETRY_CONFIG, ...retryConfig };
   const body = JSON.stringify(payload);
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -66,15 +61,7 @@ export async function submitWithRetry(
         const text = await response.text();
         if (!text) return {};
         try {
-          const json: unknown = JSON.parse(text);
-          const parsed = webhookResponseSchema.safeParse(json);
-          if (!parsed.success) return {};
-          const { ticketId, ticketUrl, message } = parsed.data;
-          return {
-            ...(ticketId !== undefined && { ticketId }),
-            ...(ticketUrl !== undefined && { ticketUrl }),
-            ...(message !== undefined && { message }),
-          };
+          return pickResponse(JSON.parse(text));
         } catch {
           return {};
         }
@@ -100,6 +87,17 @@ export async function submitWithRetry(
   }
 
   throw lastError;
+}
+
+/** Keeps only the known string fields of a webhook response; ticketUrl must be http(s). */
+function pickResponse(json: unknown): WebhookResponse {
+  if (typeof json !== 'object' || json === null) return {};
+  const { ticketId, ticketUrl, message } = json as Record<string, unknown>;
+  return {
+    ...(typeof ticketId === 'string' && { ticketId }),
+    ...(typeof ticketUrl === 'string' && /^https?:\/\//.test(ticketUrl) && { ticketUrl }),
+    ...(typeof message === 'string' && { message }),
+  };
 }
 
 async function signPayload(body: string, secret: string): Promise<string> {

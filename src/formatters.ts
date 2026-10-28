@@ -1,14 +1,11 @@
 import type { WebhookPayload, ZoneInfo, FeedbackContext } from './types.js';
 
-function formatType(type: WebhookPayload['type']): string {
-  const map = { bug: 'Bug Report', feature: 'Feature Request', general: 'General Feedback' };
-  return map[type];
-}
+const TYPE_LABELS = { bug: 'Bug Report', feature: 'Feature Request', general: 'General Feedback' };
 
 export const formatters = {
   toMarkdown(payload: WebhookPayload): string {
     const lines: string[] = [
-      `## ${formatType(payload.type)}: ${payload.title}`,
+      `## ${TYPE_LABELS[payload.type]}: ${payload.title}`,
       '',
       payload.description,
       '',
@@ -24,18 +21,15 @@ export const formatters = {
     }
 
     if (Object.keys(payload.custom).length > 0) {
-      lines.push('', '### Custom Data', formatCustomData(payload.custom, 'markdown'));
+      lines.push('', '### Custom Data', formatCustomData(payload.custom));
     }
 
-    return lines
-      .filter((l) => l !== undefined)
-      .join('\n')
-      .trim();
+    return lines.join('\n').trim();
   },
 
   toPlainText(payload: WebhookPayload): string {
     const lines: string[] = [
-      `${formatType(payload.type)}: ${payload.title}`,
+      `${TYPE_LABELS[payload.type]}: ${payload.title}`,
       '='.repeat(50),
       '',
       payload.description,
@@ -63,7 +57,7 @@ export const formatters = {
 
     return `
 <article>
-  <h2>${escape(formatType(payload.type))}: ${escape(payload.title)}</h2>
+  <h2>${escape(TYPE_LABELS[payload.type])}: ${escape(payload.title)}</h2>
   <p>${escape(payload.description).replace(/\n/g, '<br>')}</p>
   ${payload.zone ? `<p><strong>Zone:</strong> ${escape(payload.zone.label)}</p>` : ''}
   <table>
@@ -110,6 +104,6 @@ function formatUserInfo(user: NonNullable<WebhookPayload['user']>): string {
   return parts.join('\n');
 }
 
-function formatCustomData(custom: Record<string, unknown>, _format: 'markdown' | 'plain'): string {
+function formatCustomData(custom: Record<string, unknown>): string {
   return '```json\n' + JSON.stringify(custom, null, 2) + '\n```';
 }

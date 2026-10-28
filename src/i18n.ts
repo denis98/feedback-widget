@@ -44,6 +44,11 @@ export interface Messages {
     screenshots: string;
     screenshotsHint: string;
     noScreenshot: string;
+    /** Shown below the gallery: how to add images from other sources. */
+    imageHint: string;
+    uploadImage: string;
+    dropHere: string;
+    imageRejected: string;
     enlargeTitle: string;
     remove: string;
     /** `{index}` = 1-based screenshot number. */
@@ -118,6 +123,10 @@ const en: Messages = {
     screenshots: 'Screenshots',
     screenshotsHint: 'click to enlarge & annotate',
     noScreenshot: 'No screenshot yet. Capture an area via “Add image”.',
+    imageHint: 'Tip: drag images here or paste them with Ctrl+V / ⌘V.',
+    uploadImage: '📁 Upload image',
+    dropHere: 'Drop image here',
+    imageRejected: 'Some files could not be added – only images are supported.',
     enlargeTitle: 'Enlarge & annotate',
     remove: 'Remove',
     removeScreenshot: 'Remove screenshot {index}',
@@ -184,6 +193,10 @@ const de: Messages = {
     screenshots: 'Screenshots',
     screenshotsHint: 'anklicken zum Vergrößern & Markieren',
     noScreenshot: 'Noch kein Screenshot. Über „Weiteres Bild“ einen Bereich aufnehmen.',
+    imageHint: 'Tipp: Bilder hierher ziehen oder mit Strg+V / ⌘V einfügen.',
+    uploadImage: '📁 Bild hochladen',
+    dropHere: 'Bild hier ablegen',
+    imageRejected: 'Einige Dateien konnten nicht hinzugefügt werden – nur Bilder sind möglich.',
     enlargeTitle: 'Vergrößern & markieren',
     remove: 'Entfernen',
     removeScreenshot: 'Screenshot {index} entfernen',

@@ -1,27 +1,39 @@
 import React, { useState } from 'react';
 import type { ReactNode } from 'react';
 import { useFeedbackContext } from '../context/FeedbackContext.js';
-import { FeedbackModal } from './FeedbackModal.js';
+import { FeedbackModal, TYPE_ICONS } from './FeedbackModal.js';
 import { RegionSelector } from './RegionSelector.js';
 import { format } from '../i18n.js';
 import type { Messages } from '../i18n.js';
-import type { FeedbackType, TriggerRenderProps } from '../types.js';
+import type { FeedbackType, Position, TriggerRenderProps } from '../types.js';
 
 interface FeedbackWidgetProps {
   trigger?: ((props: TriggerRenderProps) => ReactNode) | null;
 }
 
-const POSITION_STYLES: Record<string, React.CSSProperties> = {
+const POSITION_STYLES: Record<Position, React.CSSProperties> = {
   'bottom-right': { bottom: '24px', right: '24px' },
   'bottom-left': { bottom: '24px', left: '24px' },
   'top-right': { top: '24px', right: '24px' },
   'top-left': { top: '24px', left: '24px' },
 };
 
-const TYPE_ICONS: Record<FeedbackType, string> = {
-  bug: '🐛',
-  feature: '💡',
-  general: '💬',
+// Floating pill at the bottom centre, shared by the selection and capturing bars.
+const BAR_STYLE: React.CSSProperties = {
+  position: 'fixed',
+  bottom: '24px',
+  left: '50%',
+  transform: 'translateX(-50%)',
+  zIndex: 9998,
+  display: 'flex',
+  alignItems: 'center',
+  padding: '10px 20px',
+  borderRadius: '999px',
+  color: '#ffffff',
+  fontFamily: 'system-ui, -apple-system, sans-serif',
+  fontSize: '14px',
+  boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
+  whiteSpace: 'nowrap',
 };
 
 export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
@@ -44,7 +56,7 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
       typeof window !== 'undefined' &&
       window.matchMedia('(prefers-color-scheme: dark)').matches);
 
-  const positionStyle = POSITION_STYLES[config.position] ?? POSITION_STYLES['bottom-right'];
+  const barStyle = { ...BAR_STYLE, backgroundColor: isDark ? '#1f2937' : '#1e293b' };
 
   // Open the widget pre-selected to a feedback type.
   const openWithType = (t: FeedbackType) => {
@@ -55,11 +67,11 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
   // ── Floating trigger button (idle) ─────────────────────────────────────
   const triggerElement: ReactNode =
     phase !== 'idle' ? null : trigger === null ? null : trigger !== undefined ? ( // hide while active
-      trigger({ open: openWidget, isOpen: false })
+      trigger({ open: openWidget })
     ) : (
       <DefaultTrigger
         isDark={isDark}
-        positionStyle={positionStyle ?? POSITION_STYLES['bottom-right']!}
+        positionStyle={POSITION_STYLES[config.position]}
         types={config.types}
         messages={m}
         onOpen={openWidget}
@@ -70,27 +82,7 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
   // ── Selection bar (selecting phase) ────────────────────────────────────
   const selectionBar: ReactNode =
     phase === 'selecting' ? (
-      <div
-        data-feedback-widget
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 9998,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '12px',
-          padding: '10px 20px',
-          borderRadius: '999px',
-          backgroundColor: isDark ? '#1f2937' : '#1e293b',
-          color: '#ffffff',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          fontSize: '14px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <div data-feedback-widget style={{ ...barStyle, gap: '12px' }}>
         {selectedZone ? (
           <>
             <span>{format(m.selection.selected, { label: selectedZone.label })}</span>
@@ -148,27 +140,7 @@ export function FeedbackWidget({ trigger }: FeedbackWidgetProps) {
   // ── Capturing indicator ────────────────────────────────────────────────
   const capturingBar: ReactNode =
     phase === 'capturing' ? (
-      <div
-        data-feedback-widget
-        style={{
-          position: 'fixed',
-          bottom: '24px',
-          left: '50%',
-          transform: 'translateX(-50%)',
-          zIndex: 9998,
-          display: 'flex',
-          alignItems: 'center',
-          gap: '10px',
-          padding: '10px 20px',
-          borderRadius: '999px',
-          backgroundColor: isDark ? '#1f2937' : '#1e293b',
-          color: '#ffffff',
-          fontFamily: 'system-ui, -apple-system, sans-serif',
-          fontSize: '14px',
-          boxShadow: '0 4px 24px rgba(0,0,0,0.4)',
-          whiteSpace: 'nowrap',
-        }}
-      >
+      <div data-feedback-widget style={{ ...barStyle, gap: '10px' }}>
         {m.capturing}
       </div>
     ) : null;

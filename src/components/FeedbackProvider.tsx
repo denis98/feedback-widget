@@ -14,7 +14,6 @@ import { startAutoDiscovery } from './AutoDiscovery.js';
 import { captureScreenshot, resolveTargetElement } from '../utils/screenshot.js';
 import { resolveMessages } from '../i18n.js';
 import type { FeedbackType, ClipRect, FeedbackField } from '../types.js';
-import type { DeepPartial, Messages } from '../i18n.js';
 
 interface FeedbackProviderProps extends FeedbackProviderConfig {
   children: ReactNode;
@@ -81,7 +80,7 @@ export function FeedbackProvider({
           },
         ]
       : [];
-    return [...contact, ...(fields ?? [])];
+    return [...contact, ...fields];
   }, [collectContact, fields, user]);
 
   const initialFieldValues = useCallback((): Record<string, string> => {
@@ -119,11 +118,9 @@ export function FeedbackProvider({
   }, []);
 
   // Auto-discovery via MutationObserver
-  const autoDiscoveryCleanupRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     if (!autoDiscovery) return;
-    autoDiscoveryCleanupRef.current = startAutoDiscovery(document, registerZone, unregisterZone);
-    return () => autoDiscoveryCleanupRef.current?.();
+    return startAutoDiscovery(document, registerZone, unregisterZone);
   }, [autoDiscovery, registerZone, unregisterZone]);
 
   // Captures a screenshot for the given selection (or full page) and appends it,
@@ -199,6 +196,10 @@ export function FeedbackProvider({
     setScreenshots((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
+  const addScreenshot = useCallback((dataUrl: string) => {
+    setScreenshots((prev) => [...prev, dataUrl]);
+  }, []);
+
   const closeWidget = useCallback(() => {
     setPhase('idle');
     setSelectedZone(null);
@@ -209,44 +210,27 @@ export function FeedbackProvider({
     setScreenshots([]);
   }, [types, initialFieldValues]);
 
-  const resolvedRetry = useMemo(
-    () => ({
-      maxRetries: retry?.maxRetries ?? 3,
-      baseDelay: retry?.baseDelay ?? 1000,
-      maxDelay: retry?.maxDelay ?? 10000,
-      backoffFactor: retry?.backoffFactor ?? 2,
-    }),
-    [retry],
-  );
-
-  const resolvedMessages = useMemo<Messages>(
-    () => resolveMessages(locale ?? 'en', messages as DeepPartial<Messages> | undefined),
-    [locale, messages],
-  );
+  const resolvedMessages = useMemo(() => resolveMessages(locale, messages), [locale, messages]);
 
   const config = useMemo<ResolvedConfig>(
     () => ({
       webhookUrl,
       projectId,
-      user: user ?? null,
-      custom: custom ?? {},
-      types: types ?? ['bug', 'feature', 'general'],
-      retry: resolvedRetry,
-      selectionMode: selectionMode ?? 'hybrid',
-      autoDiscovery: autoDiscovery ?? true,
-      screenshot: screenshot ?? false,
-      screenshotCursor: screenshotCursor ?? false,
-      collectContact: collectContact ?? false,
+      user,
+      custom,
+      types,
+      retry,
+      selectionMode,
+      screenshot,
       fields: resolvedFields,
-      position: position ?? 'bottom-right',
-      theme: theme ?? 'auto',
-      locale: locale ?? 'en',
+      position,
+      theme,
       messages: resolvedMessages,
-      showType: showType ?? true,
-      showUrl: showUrl ?? true,
-      ...(onSuccess !== undefined && { onSuccess }),
-      ...(onError !== undefined && { onError }),
-      ...(secret !== undefined && { secret }),
+      showType,
+      showUrl,
+      onSuccess,
+      onError,
+      secret,
     }),
     [
       webhookUrl,
@@ -254,16 +238,12 @@ export function FeedbackProvider({
       user,
       custom,
       types,
-      resolvedRetry,
+      retry,
       selectionMode,
-      autoDiscovery,
       screenshot,
-      screenshotCursor,
-      collectContact,
       resolvedFields,
       position,
       theme,
-      locale,
       resolvedMessages,
       showType,
       showUrl,
@@ -280,7 +260,6 @@ export function FeedbackProvider({
       registerZone,
       unregisterZone,
       phase,
-      isOpen: phase === 'form',
       openWidget,
       confirmSelection,
       addAnotherScreenshot,
@@ -300,6 +279,7 @@ export function FeedbackProvider({
       screenshots,
       updateScreenshotAt,
       removeScreenshotAt,
+      addScreenshot,
     }),
     [
       config,
@@ -322,6 +302,7 @@ export function FeedbackProvider({
       screenshots,
       updateScreenshotAt,
       removeScreenshotAt,
+      addScreenshot,
     ],
   );
 

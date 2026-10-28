@@ -1,12 +1,10 @@
 import { defineConfig } from 'tsup';
 
-// By default zod + modern-screenshot are externalized (npm convention: they are
-// declared as `dependencies` and installed by the consumer).
+// By default modern-screenshot is externalized (npm convention: it is declared
+// as a `dependency` and installed by the consumer).
 //
-// Set BUNDLE_DEPS=1 (npm run build:vendored) to bundle them into a single
-// self-contained file — used for vendoring the widget into apps that can't
-// resolve a compatible zod/modern-screenshot (e.g. the ProjectFlow/kanban app,
-// whose transitive zod is v4 while this widget needs v3).
+// Set BUNDLE_DEPS=1 (npm run build:vendored) to bundle it into a single
+// self-contained file for vendoring the widget into other apps.
 const bundleDeps = process.env.BUNDLE_DEPS === '1';
 
 export default defineConfig({
@@ -18,7 +16,7 @@ export default defineConfig({
   treeshake: true,
   // No code-splitting → a single self-contained index.{js,cjs}.
   splitting: false,
-  external: ['react', 'react-dom', ...(bundleDeps ? [] : ['zod', 'modern-screenshot'])],
-  ...(bundleDeps ? { noExternal: ['zod', 'modern-screenshot'] } : {}),
+  external: ['react', 'react-dom', ...(bundleDeps ? [] : ['modern-screenshot'])],
+  ...(bundleDeps ? { noExternal: ['modern-screenshot'] } : {}),
   injectStyle: true,
 });

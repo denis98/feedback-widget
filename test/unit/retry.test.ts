@@ -30,6 +30,16 @@ function makeResponse(status: number, body?: unknown): Response {
 }
 
 describe('submitWithRetry', () => {
+  it('keeps only valid string fields of the response', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(
+        makeResponse(200, { ticketId: 42, ticketUrl: 'javascript:alert(1)', message: 'ok' }),
+      );
+    const result = await submitWithRetry(mockPayload, 'http://test/webhook', {}, fetchMock);
+    expect(result).toEqual({ message: 'ok' });
+  });
+
   it('succeeds immediately on 200', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(makeResponse(200, { ticketId: 'T-1' }));
 

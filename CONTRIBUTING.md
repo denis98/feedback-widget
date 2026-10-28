@@ -24,9 +24,9 @@ npm run build
 
 - Keep the public API typed and documented (see `src/types.ts`).
 - Add or update tests for any behavior change (`test/`).
-- The default build externalizes `zod` and `modern-screenshot`. Use
+- The default build externalizes `modern-screenshot`. Use
   `npm run build:vendored` only when producing a self-contained bundle for
-  environments that cannot resolve a compatible `zod`/`modern-screenshot`.
+  environments that cannot resolve it.
 
 ## Commit messages
 

@@ -1,6 +1,5 @@
 import { describe, test, expect } from 'vitest';
 import { buildPayload } from '../../src/utils/payload-builder.js';
-import { webhookPayloadSchema } from '../../src/schema.js';
 
 const base = { projectId: 'proj', user: null, custom: {} };
 
@@ -72,7 +71,7 @@ describe('buildPayload', () => {
     expect(payload.context.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
-  test('passes full schema validation', () => {
+  test('produces a complete payload', () => {
     const payload = buildPayload({
       ...base,
       type: 'feature',
@@ -80,7 +79,9 @@ describe('buildPayload', () => {
       description: 'Would be great',
       zone: { id: 'header', label: 'Header' },
     });
-    const result = webhookPayloadSchema.safeParse(payload);
-    expect(result.success).toBe(true);
+    expect(payload.feedbackId).toMatch(/^[0-9a-f-]{36}$/);
+    expect(payload.zone).toEqual({ id: 'header', label: 'Header' });
+    expect(payload.screenshot).toBeNull();
+    expect(payload.screenshots).toEqual([]);
   });
 });

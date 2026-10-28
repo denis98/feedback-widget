@@ -103,7 +103,6 @@ export type WidgetPhase = 'idle' | 'selecting' | 'capturing' | 'form';
 
 export interface TriggerRenderProps {
   open: () => void;
-  isOpen: boolean;
 }
 
 export interface FeedbackProviderConfig {
@@ -175,16 +174,12 @@ export interface ResolvedConfig {
   user: UserInfo | null;
   custom: Record<string, unknown>;
   types: FeedbackType[];
-  retry: RetryConfig;
+  retry: Partial<RetryConfig> | undefined;
   selectionMode: SelectionMode;
-  autoDiscovery: boolean;
   screenshot: boolean;
-  screenshotCursor: boolean;
-  collectContact: boolean;
   fields: FeedbackField[];
   position: Position;
   theme: Theme;
-  locale: string;
   /** Resolved message dictionary (built-in pack merged with overrides). */
   messages: Messages;
   showType: boolean;
@@ -201,8 +196,6 @@ export interface FeedbackContextValue {
   unregisterZone: (id: string) => void;
   /** Current phase of the widget state machine */
   phase: WidgetPhase;
-  /** @deprecated use phase instead */
-  isOpen: boolean;
   /** Enter selection mode (or form directly when selectionMode=none) */
   openWidget: () => void;
   /**
@@ -241,6 +234,8 @@ export interface FeedbackContextValue {
   updateScreenshotAt: (index: number, dataUrl: string) => void;
   /** Remove a collected screenshot. */
   removeScreenshotAt: (index: number) => void;
+  /** Append an image (e.g. pasted from the clipboard) as a screenshot. */
+  addScreenshot: (dataUrl: string) => void;
 }
 
 export interface BuildPayloadInput {

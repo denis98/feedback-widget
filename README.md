@@ -19,7 +19,8 @@ webhook (e.g. a ticket system).
 - ✏️ **Annotate** — freehand pen + rectangle, colors, undo/clear, flattened into
   the image on save.
 - 🗂 **Multiple screenshots** per submission with an in-form gallery; add more
-  via “Weiteres Bild”, even after navigating to another page.
+  via “Weiteres Bild”, even after navigating to another page, or add images
+  from other tools: paste (Ctrl+V / ⌘V), drag & drop, or “Bild hochladen”.
 - 📝 **Flexible form schema** — declare your own `fields`; values map to the
   submitter (`user`) or arbitrary `custom` data.
 - ✉️ **Contact + thank-you** — optional name/email so you can follow up.
@@ -80,6 +81,13 @@ Capture strategy, tuned for fidelity — including a single selected region:
    scrolled into view first.
 2. **`modern-screenshot` fallback** (`domToPng`) when Screen Capture is
    unavailable or denied — no permission, lower fidelity.
+
+Images from other sources can be added while the form is open: paste them
+(Ctrl+V / ⌘V), drop them onto the form, or pick files via “Bild hochladen”.
+Any browser-readable format is converted to PNG and downscaled to at most
+2560 px on the longest edge (`MAX_IMAGE_EDGE`) to keep the payload small.
+Pasting into a text field that also receives text (e.g. cells copied from
+Excel) inserts the text only.
 
 Screenshots are delivered as base64 PNG data URLs (`screenshots: string[]`, plus
 `screenshot` = the first, for backward compatibility).
@@ -201,7 +209,7 @@ npm run dev            # tsup watch build
 npm test               # vitest
 npm run typecheck      # tsc --noEmit
 npm run build          # bundle to dist/ (deps externalized)
-npm run build:vendored # self-contained bundle (zod + modern-screenshot inlined)
+npm run build:vendored # self-contained bundle (modern-screenshot inlined)
 npm run storybook      # interactive playground
 ```
 

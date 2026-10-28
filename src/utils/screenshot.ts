@@ -209,29 +209,105 @@ export function applyScrollOffset(clone: Node): void {
   });
 }
 
+// ── Offscreen pruning (modern-screenshot copies every computed style of every
+//    cloned node, which takes seconds on large pages) ─────────────────────────
+
+const SIZE_ATTR = 'data-fw-size';
+/** Extra margin around the viewport so shadows/outlines near the edge survive. */
+const PRUNE_MARGIN = 100;
+
+/**
+ * Finds the elements that (or whose descendants) intersect the viewport.
+ * Children of all other elements are skipped while cloning; those elements
+ * stay in the clone as empty boxes of their original size, so the layout of
+ * the visible part does not shift. Returns the clone filter and a cleanup.
+ */
+export function markOffscreen(): { keep: (node: Node) => boolean; cleanup: () => void } {
+  const visible = new Set<Element>();
+  const all = document.body.querySelectorAll('*');
+  all.forEach((el) => {
+    const r = el.getBoundingClientRect();
+    if (
+      (!r.width && !r.height) ||
+      r.bottom < -PRUNE_MARGIN ||
+      r.right < -PRUNE_MARGIN ||
+      r.top > window.innerHeight + PRUNE_MARGIN ||
+      r.left > window.innerWidth + PRUNE_MARGIN
+    ) {
+      return;
+    }
+    // Fixed/absolute descendants can be visible inside an offscreen parent,
+    // so visibility propagates upwards rather than being judged per parent.
+    for (let e: Element | null = el; e && !visible.has(e); e = e.parentElement) visible.add(e);
+  });
+
+  // Pin the size of the empty boxes (parent visible, element not). Document
+  // order visits parents first, so fully kept subtrees cascade to children.
+  const sized: Element[] = [];
+  const full = new Set<Element>();
+  all.forEach((el) => {
+    const parent = el.parentElement;
+    if (parent && full.has(parent)) {
+      visible.add(el);
+      full.add(el);
+      return;
+    }
+    if (visible.has(el) || !parent || !visible.has(parent)) return;
+    if (!el.firstChild) return;
+    const cs = getComputedStyle(el);
+    // Inline-level boxes sit on their content's baseline (and inline ones have
+    // no size of their own): emptying them would shift the line, so keep them.
+    if (cs.display.startsWith('inline') || cs.display === 'contents') {
+      visible.add(el);
+      full.add(el);
+      return;
+    }
+    el.setAttribute(SIZE_ATTR, `${cs.width};${cs.height}`);
+    sized.push(el);
+  });
+
+  return {
+    keep: (node) => {
+      const parent = node.parentElement;
+      return !parent || parent === document.body || visible.has(parent);
+    },
+    cleanup: () => sized.forEach((el) => el.removeAttribute(SIZE_ATTR)),
+  };
+}
+
+/** Restores the size of a pruned (emptied) clone. */
+function applyPrunedSize(clone: Node): void {
+  if (!(clone instanceof HTMLElement)) return;
+  const attr = clone.getAttribute(SIZE_ATTR);
+  if (!attr) return;
+  clone.removeAttribute(SIZE_ATTR);
+  const [width = '', height = ''] = attr.split(';');
+  clone.style.width = width;
+  clone.style.height = height;
+}
+
 // ── Method 1: modern-screenshot (fallback) ────────────────────────────────────
 
-async function captureViaModernScreenshot(
-  targetEl: HTMLElement | undefined,
-  cursor: boolean,
-): Promise<string> {
+async function captureViaModernScreenshot(cursor: boolean): Promise<string> {
   const hidden = hideWidgets();
   const restoreCur = cursor ? null : hideCursor();
   const unmark = markScrollOffsets();
   await waitForRepaint();
+  const pruned = markOffscreen();
 
   try {
-    const scale = window.devicePixelRatio ?? 1;
-    if (targetEl) {
-      return await domToPng(targetEl, { scale, onCloneEachNode: applyScrollOffset });
-    }
     return await domToPng(document.body, {
-      scale,
-      onCloneEachNode: applyScrollOffset,
+      scale: window.devicePixelRatio ?? 1,
+      filter: pruned.keep,
+      onCloneEachNode: (clone) => {
+        applyPrunedSize(clone);
+        applyScrollOffset(clone);
+      },
       width: window.innerWidth,
       height: window.innerHeight,
     });
   } finally {
+    pruned.cleanup();
     unmark();
     restoreCur?.();
     restoreWidgets(hidden);
@@ -293,7 +369,6 @@ async function captureViaScreenCaptureAPI(
 
     return canvas.toDataURL('image/png');
   } finally {
-    track.stop();
     stream.getTracks().forEach((t) => t.stop());
   }
 }
@@ -322,6 +397,44 @@ function loadImage(src: string): Promise<HTMLImageElement> {
     img.onerror = reject;
     img.src = src;
   });
+}
+
+/** Longest edge of added images; matches a full-page capture on a retina screen. */
+export const MAX_IMAGE_EDGE = 2560;
+
+/** Scales `width`×`height` down (never up) so the longest edge fits `maxEdge`. */
+export function fitWithin(
+  width: number,
+  height: number,
+  maxEdge: number,
+): { width: number; height: number } {
+  const scale = Math.min(1, maxEdge / Math.max(width, height, 1));
+  return {
+    width: Math.max(1, Math.round(width * scale)),
+    height: Math.max(1, Math.round(height * scale)),
+  };
+}
+
+/**
+ * Converts an image file (any browser-decodable format) to a PNG data URL,
+ * downscaled to `maxEdge` so huge photos don't bloat the webhook payload.
+ */
+export async function blobToPngDataUrl(blob: Blob, maxEdge = MAX_IMAGE_EDGE): Promise<string> {
+  const url = URL.createObjectURL(blob);
+  try {
+    const img = await loadImage(url);
+    const { width, height } = fitWithin(img.naturalWidth, img.naturalHeight, maxEdge);
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) throw new Error('No 2d context');
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, width, height);
+    return canvas.toDataURL('image/png');
+  } finally {
+    URL.revokeObjectURL(url);
+  }
 }
 
 /** Crops a PNG data URL to a viewport-relative CSS rectangle. */
@@ -368,9 +481,6 @@ export async function captureScreenshot(options: ScreenshotOptions = {}): Promis
   }
 
   // Fallback: re-render the DOM (no permission needed, lower fidelity).
-  if (clip) {
-    const full = await captureViaModernScreenshot(undefined, cursor);
-    return cropDataUrl(full, clip);
-  }
-  return captureViaModernScreenshot(targetEl, cursor);
+  const full = await captureViaModernScreenshot(cursor);
+  return clip ? cropDataUrl(full, clip) : full;
 }

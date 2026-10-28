@@ -19,15 +19,6 @@ export { startAutoDiscovery } from './components/AutoDiscovery.js';
 export { builtinMessages, resolveMessages, format } from './i18n.js';
 export type { Messages, DeepPartial } from './i18n.js';
 
-// Schema
-export {
-  webhookPayloadSchema,
-  webhookResponseSchema,
-  zoneInfoSchema,
-  feedbackContextSchema,
-  userInfoSchema,
-} from './schema.js';
-
 // Types
 export type {
   FeedbackType,

@@ -19,53 +19,40 @@ function parseZoneElement(el: HTMLElement): ZoneRegistration | null {
   return { id, label, element: el, ...(meta !== undefined && { meta }) };
 }
 
+/** The node itself (if it is a zone) plus all zone descendants. */
+function zonesIn(node: HTMLElement): HTMLElement[] {
+  return [node, ...node.querySelectorAll<HTMLElement>('[data-feedback-zone]')].filter(
+    (el) => el.dataset['feedbackZone'],
+  );
+}
+
 export function startAutoDiscovery(
   root: Document | Element,
   register: RegisterFn,
   unregister: UnregisterFn,
 ): () => void {
-  // Register already-existing zones
-  const existing = (
-    root instanceof Document ? root.documentElement : root
-  ).querySelectorAll<HTMLElement>('[data-feedback-zone]');
-  existing.forEach((el) => {
+  const rootEl = root instanceof Document ? root.documentElement : root;
+  const add = (el: HTMLElement) => {
     const zone = parseZoneElement(el);
     if (zone) register(zone);
-  });
+  };
+
+  // Register already-existing zones
+  rootEl.querySelectorAll<HTMLElement>('[data-feedback-zone]').forEach(add);
 
   const observer = new MutationObserver((mutations) => {
     for (const mutation of mutations) {
-      if (mutation.type === 'childList') {
-        mutation.addedNodes.forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-          // Check the node itself
-          if (node.dataset['feedbackZone']) {
-            const zone = parseZoneElement(node);
-            if (zone) register(zone);
-          }
-          // Check descendants
-          node.querySelectorAll<HTMLElement>('[data-feedback-zone]').forEach((el) => {
-            const zone = parseZoneElement(el);
-            if (zone) register(zone);
-          });
-        });
-        mutation.removedNodes.forEach((node) => {
-          if (!(node instanceof HTMLElement)) return;
-          if (node.dataset['feedbackZone']) {
-            unregister(node.dataset['feedbackZone']);
-          }
-          node.querySelectorAll<HTMLElement>('[data-feedback-zone]').forEach((el) => {
-            if (el.dataset['feedbackZone']) unregister(el.dataset['feedbackZone']);
-          });
-        });
-      }
+      mutation.addedNodes.forEach((node) => {
+        if (node instanceof HTMLElement) zonesIn(node).forEach(add);
+      });
+      mutation.removedNodes.forEach((node) => {
+        if (node instanceof HTMLElement)
+          zonesIn(node).forEach((el) => unregister(el.dataset['feedbackZone']!));
+      });
     }
   });
 
-  observer.observe(root instanceof Document ? root.documentElement : root, {
-    childList: true,
-    subtree: true,
-  });
+  observer.observe(rootEl, { childList: true, subtree: true });
 
   return () => observer.disconnect();
 }
