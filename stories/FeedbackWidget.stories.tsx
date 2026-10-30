@@ -147,6 +147,21 @@ export const NoSelection: Story = {
 };
 
 // ---------------------------------------------------------------------------
+// Screenshots (capture, annotate, paste with Ctrl+V / ⌘V)
+// ---------------------------------------------------------------------------
+export const Screenshots: Story = {
+  name: 'Screenshots (Capture & Paste)',
+  render: () => (
+    <FeedbackProvider webhookUrl={ECHO_URL} screenshot={true}>
+      <div style={{ padding: '40px' }}>
+        <h2>Screenshots enabled</h2>
+        <p>Capture an area, or paste, drop or upload an image from another tool.</p>
+      </div>
+    </FeedbackProvider>
+  ),
+};
+
+// ---------------------------------------------------------------------------
 // Webhook Error + Retry
 // ---------------------------------------------------------------------------
 export const WebhookError: Story = {

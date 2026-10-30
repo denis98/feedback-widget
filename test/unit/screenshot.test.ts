@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import {
   applyScrollOffset,
   computeCropRect,
+  fitWithin,
+  markOffscreen,
   markScrollOffsets,
 } from '../../src/utils/screenshot.js';
 
@@ -95,5 +97,57 @@ describe('scroll offsets in the DOM fallback', () => {
     // Loose text is wrapped so it shifts too.
     expect(clone.lastChild?.nodeName).toBe('SPAN');
     expect((clone.lastChild as HTMLElement).style.top).toBe('-120px');
+  });
+});
+
+describe('offscreen pruning in the DOM fallback', () => {
+  it('empties offscreen blocks, keeps visible chains and inline-level subtrees', () => {
+    document.body.innerHTML =
+      '<div id="vis"><p id="vp">a</p></div><div id="off"><p id="op">b</p></div>' +
+      '<div id="wrap"><div id="toast">c</div></div><span id="ib" style="display:inline-block"><b id="ibc">d</b></span>';
+    const at = (y: number) => ({
+      top: y,
+      bottom: y + 10,
+      left: 0,
+      right: 10,
+      width: 10,
+      height: 10,
+    });
+    const rects: Record<string, number> = {
+      vis: 0,
+      vp: 0,
+      off: 5000,
+      op: 5000,
+      wrap: 5000,
+      toast: 0,
+      ib: 5000,
+      ibc: 5000,
+    };
+    document.body.querySelectorAll<HTMLElement>('*').forEach((el) => {
+      el.getBoundingClientRect = () => at(rects[el.id] ?? 0) as DOMRect;
+    });
+
+    const { keep, cleanup } = markOffscreen();
+    const $ = (id: string) => document.getElementById(id)!;
+    expect(keep($('vp'))).toBe(true);
+    expect(keep($('off'))).toBe(true); // the box itself stays (layout)
+    expect(keep($('op'))).toBe(false); // its content is skipped
+    expect(keep($('toast'))).toBe(true); // visible child of an offscreen parent
+    expect(keep($('ibc'))).toBe(true); // inline-block content defines the baseline
+    expect($('off').hasAttribute('data-fw-size')).toBe(true);
+    cleanup();
+    expect($('off').hasAttribute('data-fw-size')).toBe(false);
+  });
+});
+
+describe('fitWithin', () => {
+  it('scales the longest edge down to the limit, keeping the aspect ratio', () => {
+    expect(fitWithin(3840, 2160, 2560)).toEqual({ width: 2560, height: 1440 });
+    expect(fitWithin(1000, 4000, 2000)).toEqual({ width: 500, height: 2000 });
+  });
+
+  it('never upscales and never returns 0', () => {
+    expect(fitWithin(800, 600, 2560)).toEqual({ width: 800, height: 600 });
+    expect(fitWithin(10000, 1, 100)).toEqual({ width: 100, height: 1 });
   });
 });

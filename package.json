@@ -47,8 +47,7 @@
     "react-dom": ">=18.0.0"
   },
   "dependencies": {
-    "modern-screenshot": "^4.6.8",
-    "zod": "^3.23.8 || ^4.0.0"
+    "modern-screenshot": "^4.6.8"
   },
   "devDependencies": {
     "@arethetypeswrong/cli": "^0.17.4",

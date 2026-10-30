@@ -1,13 +1,14 @@
-import React, { useState, FormEvent } from 'react';
+import React, { useCallback, useEffect, useRef, useState, FormEvent } from 'react';
 import { useFeedbackContext } from '../context/FeedbackContext.js';
 import { buildPayload } from '../utils/payload-builder.js';
 import { submitWithRetry } from '../utils/retry.js';
 import { ScreenshotAnnotator } from './ScreenshotAnnotator.js';
+import { blobToPngDataUrl } from '../utils/screenshot.js';
 import { format } from '../i18n.js';
 import type { Messages } from '../i18n.js';
 import type { FeedbackType, WebhookResponse } from '../types.js';
 
-const TYPE_ICONS: Record<FeedbackType, string> = {
+export const TYPE_ICONS: Record<FeedbackType, string> = {
   bug: '🐛',
   feature: '💡',
   general: '💬',
@@ -37,6 +38,7 @@ export function FeedbackModal() {
     updateScreenshotAt,
     removeScreenshotAt,
     addAnotherScreenshot,
+    addScreenshot,
   } = useFeedbackContext();
 
   const m = config.messages;
@@ -44,6 +46,73 @@ export function FeedbackModal() {
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
   const [annotateIndex, setAnnotateIndex] = useState<number | null>(null);
   const annotateSrc = annotateIndex !== null ? screenshots[annotateIndex] : undefined;
+
+  // Images from other sources: paste, drag & drop, or file picker.
+  const acceptsImages =
+    config.screenshot && submitState.status !== 'success' && annotateIndex === null;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [imageRejected, setImageRejected] = useState(false);
+
+  const addImageFiles = useCallback(
+    (files: File[]) => {
+      const images = files.filter((f) => f.type.startsWith('image/'));
+      void Promise.allSettled(images.map((f) => blobToPngDataUrl(f))).then((results) => {
+        let failed = files.length - images.length;
+        results.forEach((r) => {
+          if (r.status === 'fulfilled') addScreenshot(r.value);
+          else {
+            failed++;
+            console.warn('[feedback-widget] Image could not be read:', r.reason);
+          }
+        });
+        setImageRejected(failed > 0);
+      });
+    },
+    [addScreenshot],
+  );
+
+  useEffect(() => {
+    if (!acceptsImages) return;
+    const onPaste = (e: ClipboardEvent) => {
+      const data = e.clipboardData;
+      if (!data) return;
+      const images = Array.from(data.items)
+        .filter((i) => i.kind === 'file' && i.type.startsWith('image/'))
+        .map((i) => i.getAsFile())
+        .filter((f): f is File => f !== null);
+      if (images.length === 0) return;
+      // Office apps put a picture of copied text on the clipboard too:
+      // in a text field the text wins.
+      const t = e.target;
+      const inTextField = t instanceof HTMLInputElement || t instanceof HTMLTextAreaElement;
+      if (inTextField && data.getData('text/plain')) return;
+      e.preventDefault();
+      addImageFiles(images);
+    };
+    document.addEventListener('paste', onPaste);
+    return () => document.removeEventListener('paste', onPaste);
+  }, [acceptsImages, addImageFiles]);
+
+  const dragProps = acceptsImages
+    ? {
+        onDragOver: (e: React.DragEvent) => {
+          if (!e.dataTransfer.types.includes('Files')) return;
+          e.preventDefault(); // allows the drop
+          e.dataTransfer.dropEffect = 'copy';
+          setDragActive(true);
+        },
+        onDragLeave: (e: React.DragEvent) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setDragActive(false);
+        },
+        onDrop: (e: React.DragEvent) => {
+          if (!e.dataTransfer.types.includes('Files')) return;
+          e.preventDefault();
+          setDragActive(false);
+          addImageFiles(Array.from(e.dataTransfer.files));
+        },
+      }
+    : {};
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -142,8 +211,9 @@ export function FeedbackModal() {
       aria-label="Feedback"
       data-feedback-widget
       data-feedback-modal
+      {...dragProps}
     >
-      <div style={styles.modal}>
+      <div style={{ ...styles.modal, ...(dragActive ? styles.modalDragActive : {}) }}>
         {/* Header */}
         <div style={styles.header}>
           <h2 style={styles.heading}>{m.form.heading}</h2>
@@ -200,11 +270,37 @@ export function FeedbackModal() {
             {/* Screenshot gallery */}
             {config.screenshot && (
               <div style={styles.galleryWrap}>
-                <div style={styles.galleryLabel}>
-                  {m.form.screenshots}
-                  {screenshots.length > 0 && ` (${screenshots.length})`} – {m.form.screenshotsHint}
+                <div style={styles.galleryHeader}>
+                  <div style={styles.galleryLabel}>
+                    {m.form.screenshots}
+                    {screenshots.length > 0 && ` (${screenshots.length})`} –{' '}
+                    {m.form.screenshotsHint}
+                  </div>
+                  <button
+                    type="button"
+                    style={styles.linkBtn}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    {m.form.uploadImage}
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    hidden
+                    data-testid="feedback-image-input"
+                    onChange={(e) => {
+                      addImageFiles(Array.from(e.target.files ?? []));
+                      e.target.value = ''; // same file can be picked again
+                    }}
+                  />
                 </div>
-                {screenshots.length === 0 ? (
+                {dragActive ? (
+                  <div style={{ ...styles.galleryEmpty, ...styles.dropZone }}>
+                    {m.form.dropHere}
+                  </div>
+                ) : screenshots.length === 0 ? (
                   <div style={styles.galleryEmpty}>{m.form.noScreenshot}</div>
                 ) : (
                   <div style={styles.galleryGrid}>
@@ -230,6 +326,12 @@ export function FeedbackModal() {
                     ))}
                   </div>
                 )}
+                <div
+                  style={imageRejected ? styles.imageRejected : styles.imageHint}
+                  role={imageRejected ? 'alert' : undefined}
+                >
+                  {imageRejected ? m.form.imageRejected : m.form.imageHint}
+                </div>
               </div>
             )}
 
@@ -499,7 +601,43 @@ function getStyles(isDark: boolean) {
       fontSize: '12px',
       fontWeight: 500,
       color: mutedText,
+    },
+    modalDragActive: {
+      outline: '3px dashed #2563eb',
+      outlineOffset: '-3px',
+    },
+    galleryHeader: {
+      display: 'flex',
+      alignItems: 'baseline',
+      justifyContent: 'space-between',
+      gap: '8px',
       marginBottom: '8px',
+    },
+    linkBtn: {
+      background: 'none',
+      border: 'none',
+      padding: 0,
+      color: isDark ? '#60a5fa' : '#2563eb',
+      fontSize: '12px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      whiteSpace: 'nowrap' as const,
+    },
+    dropZone: {
+      border: '2px dashed #2563eb',
+      color: isDark ? '#60a5fa' : '#2563eb',
+      fontWeight: 600,
+      padding: '24px 12px',
+    },
+    imageHint: {
+      fontSize: '12px',
+      color: mutedText,
+      marginTop: '6px',
+    },
+    imageRejected: {
+      fontSize: '12px',
+      color: isDark ? '#f87171' : '#dc2626',
+      marginTop: '6px',
     },
     galleryEmpty: {
       padding: '12px',

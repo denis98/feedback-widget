@@ -11,12 +11,6 @@ export default defineConfig({
       reporter: ['text', 'lcov'],
       include: ['src/**'],
     },
-    server: {
-      deps: {
-        // html2canvas is an optional peer dep – mock it in tests
-        external: ['html2canvas'],
-      },
-    },
   },
   resolve: {
     alias: {

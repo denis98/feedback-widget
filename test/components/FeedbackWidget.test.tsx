@@ -1,8 +1,28 @@
 import React from 'react';
-import { describe, test, expect } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { describe, test, expect, vi } from 'vitest';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { FeedbackProvider } from '../../src/components/FeedbackProvider.js';
+
+// jsdom cannot decode images; the PNG conversion itself is a browser concern.
+vi.mock('../../src/utils/screenshot.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../../src/utils/screenshot.js')>()),
+  blobToPngDataUrl: vi.fn(async () => 'data:image/png;base64,UEFTVEVE'),
+}));
+
+/** Dispatches a paste event carrying an image (and optional text) at `target`. */
+function pasteImage(target: EventTarget, text = '') {
+  const file = new File(['x'], 'shot.png', { type: 'image/png' });
+  const event = new Event('paste', { bubbles: true, cancelable: true });
+  Object.defineProperty(event, 'clipboardData', {
+    value: {
+      items: [{ kind: 'file', type: file.type, getAsFile: () => file }],
+      getData: (t: string) => (t === 'text/plain' ? text : ''),
+    },
+  });
+  target.dispatchEvent(event);
+  return event;
+}
 
 function renderWidget(props: Partial<Parameters<typeof FeedbackProvider>[0]> = {}) {
   return render(
@@ -113,6 +133,48 @@ describe('FeedbackWidget', () => {
     expect(screen.getByRole('dialog')).toBeInTheDocument();
     expect(screen.getByText(/no screenshot yet/i)).toBeInTheDocument();
     expect(screen.queryByAltText(/screenshot 1/i)).not.toBeInTheDocument();
+  });
+
+  test('pasting an image adds it to the gallery; text pasted into a field stays text', async () => {
+    const user = userEvent.setup();
+    renderWidget({ screenshot: true });
+    await openTrigger(user);
+    await user.click(screen.getByRole('button', { name: /without screenshot/i }));
+    expect(screen.getByText(/paste them with ctrl\+v/i)).toBeInTheDocument();
+
+    // Office apps put a picture next to copied text: in a text field the text wins.
+    const ignored = pasteImage(screen.getByRole('textbox', { name: /title/i }), 'copied cell');
+    expect(ignored.defaultPrevented).toBe(false);
+
+    const handled = pasteImage(document.body);
+    expect(handled.defaultPrevented).toBe(true);
+    const img = await screen.findByAltText(/screenshot 1/i);
+    expect(img).toHaveAttribute('src', 'data:image/png;base64,UEFTVEVE');
+    expect(screen.queryByAltText(/screenshot 2/i)).not.toBeInTheDocument();
+  });
+
+  test('upload button and drag & drop add images; non-images show a notice', async () => {
+    const user = userEvent.setup({ applyAccept: false });
+    renderWidget({ screenshot: true });
+    await openTrigger(user);
+    await user.click(screen.getByRole('button', { name: /without screenshot/i }));
+
+    const png = new File(['x'], 'a.png', { type: 'image/png' });
+    await user.upload(screen.getByTestId('feedback-image-input'), png);
+    await screen.findByAltText(/screenshot 1/i);
+
+    const dialog = screen.getByRole('dialog');
+    const drop = (files: File[]) => {
+      const dataTransfer = { types: ['Files'], files, dropEffect: 'none' };
+      fireEvent.dragOver(dialog, { dataTransfer });
+      fireEvent.drop(dialog, { dataTransfer });
+    };
+    drop([new File(['x'], 'b.jpg', { type: 'image/jpeg' })]);
+    await screen.findByAltText(/screenshot 2/i);
+
+    drop([new File(['x'], 'doc.pdf', { type: 'application/pdf' })]);
+    expect(await screen.findByRole('alert')).toHaveTextContent(/only images/i);
+    expect(screen.queryByAltText(/screenshot 3/i)).not.toBeInTheDocument();
   });
 
   test('shows all three types by default', async () => {
